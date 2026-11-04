@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>施工照片</title>
+    <title>多頁施工照片報告</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- html2pdf.js -->
@@ -11,17 +11,26 @@
     <style>
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            .page-container { box-shadow: none !important; margin: 0 !important; padding: 10mm !important; page-break-after: always; break-after: page; }
             .no-print { display: none !important; }
             input, textarea { border: none !important; background: transparent !important; resize: none !important; }
-            table { page-break-inside: auto; }
+            .page-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 5mm !important;
+                page-break-after: always;
+                break-after: page;
+            }
             tr { page-break-inside: avoid; break-inside: avoid; }
+        }
+        .page-container {
+            page-break-after: always;
+            break-after: page;
         }
         /* 讓照片完全填滿右側格子 */
         .photo-canvas {
             width: 100% !important;
             height: auto !important;
-            max-height: 280px;
+            max-height: 240px;
             object-fit: cover;
             display: block;
         }
@@ -29,163 +38,284 @@
 </head>
 <body class="bg-gray-100 py-4 px-2">
 
-    <!-- 主容器（如果有多頁需求，可複製多個 .page-container 區塊） -->
-    <div class="page-container max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-4 sm:p-6 mb-6" id="print-area">
-        <!-- 標題 -->
-        <h1 class="text-xl font-bold text-center text-gray-800 mb-3 border-b pb-2">施工照片記錄表</h1>
-
-        <!-- 基本資訊區 -->
-        <div class="mb-4 text-xs sm:text-sm">
-            <label class="block font-semibold text-gray-700 mb-1">工程名稱：</label>
-            <input type="text" id="projectName" placeholder="請輸入工程名稱" class="w-full border border-gray-300 rounded p-1.5 focus:ring-1 focus:ring-blue-500 outline-none">
+    <!-- 全域控制列 (不印出) -->
+    <div class="max-w-2xl mx-auto mb-4 p-4 bg-white shadow rounded-xl no-print space-y-3">
+        <h1 class="text-lg font-bold text-center text-gray-800">施工照片批次產生器</h1>
+        <div>
+            <label class="block font-semibold text-gray-700 mb-1 text-xs">工程名稱（全體套用）：</label>
+            <input type="text" id="globalProjectName" placeholder="請輸入工程名稱" class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500" oninput="syncProjectName(this.value)">
         </div>
-
-        <!-- 一次選取 3 張照片的快捷按鈕 -->
-        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between no-print">
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div>
-                <span class="font-bold text-blue-800 text-xs sm:text-sm block">💡 快速匯入：</span>
-                <span class="text-xs text-blue-600">點擊右側按鈕，可從相簿「一次選取 3 張照片」自動填入前、中、後！</span>
+                <span class="font-bold text-blue-800 text-xs block">💡 批次上傳多張照片：</span>
+                <span class="text-xs text-blue-600">一次選取多張照片（例如 9 張），系統會自動每 3 張一頁分發到各 A4！</span>
             </div>
             <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
-                一次選 3 張照片
-                <input type="file" id="batchFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
+                選擇多張照片
+                <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleMultiImages(event)">
             </label>
         </div>
-
-        <!-- 施工表格區塊 (左窄右寬、照片填滿) -->
-        <div class="border border-gray-300 rounded overflow-hidden mb-4">
-            <table class="w-full border-collapse" style="table-layout: fixed;">
-                <thead>
-                    <tr class="bg-gray-100 text-gray-700 text-xs">
-                        <!-- 左側欄位縮小 (25%)，右側照片欄位放大 (75%) -->
-                        <th class="border border-gray-300 p-1.5 w-[25%]">階段 / 說明</th>
-                        <th class="border border-gray-300 p-1.5 w-[75%]">照片與施工日期</th>
-                    </tr>
-                </thead>
-                <tbody class="text-xs">
-                    <!-- 施工前 -->
-                    <tr>
-                        <td class="border border-gray-300 p-2 bg-gray-50 align-top">
-                            <span class="font-bold text-blue-600 block mb-1">【施工前】</span>
-                            <textarea id="descBefore" rows="4" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10 resize-none"></textarea>
-                        </td>
-                        <td class="border border-gray-300 p-2 space-y-1.5 align-middle">
-                            <div class="flex items-center gap-2 no-print">
-                                <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                <input type="date" id="dateBefore" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('Before')">
-                            </div>
-                            <div class="no-print">
-                                <input type="file" id="fileBefore" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before')">
-                            </div>
-                            <div class="text-center">
-                                <canvas id="canvasBefore" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                            </div>
-                        </td>
-                    </tr>
-                    <!-- 施工中 -->
-                    <tr>
-                        <td class="border border-gray-300 p-2 bg-gray-50 align-top">
-                            <span class="font-bold text-yellow-600 block mb-1">【施工中】</span>
-                            <textarea id="descDuring" rows="4" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10 resize-none"></textarea>
-                        </td>
-                        <td class="border border-gray-300 p-2 space-y-1.5 align-middle">
-                            <div class="flex items-center gap-2 no-print">
-                                <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                <input type="date" id="dateDuring" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('During')">
-                            </div>
-                            <div class="no-print">
-                                <input type="file" id="fileDuring" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During')">
-                            </div>
-                            <div class="text-center">
-                                <canvas id="canvasDuring" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                            </div>
-                        </td>
-                    </tr>
-                    <!-- 施工完 -->
-                    <tr>
-                        <td class="border border-gray-300 p-2 bg-gray-50 align-top">
-                            <span class="font-bold text-green-600 block mb-1">【施工完】</span>
-                            <textarea id="descAfter" rows="4" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10 resize-none"></textarea>
-                        </td>
-                        <td class="border border-gray-300 p-2 space-y-1.5 align-middle">
-                            <div class="flex items-center gap-2 no-print">
-                                <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                <input type="date" id="dateAfter" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('After')">
-                            </div>
-                            <div class="no-print">
-                                <input type="file" id="fileAfter" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After')">
-                            </div>
-                            <div class="text-center">
-                                <canvas id="canvasAfter" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 按鈕區 -->
-        <div class="text-center space-x-2 no-print">
+        <div class="flex justify-center gap-2 pt-2">
             <button onclick="generatePDF()" class="bg-blue-600 text-white font-bold py-2 px-5 rounded shadow hover:bg-blue-700 text-sm transition">
-                下載單頁 PDF
+                下載完整多頁 PDF
             </button>
             <button onclick="window.print()" class="bg-gray-600 text-white font-bold py-2 px-4 rounded shadow hover:bg-gray-700 text-sm transition">
-                系統列印 (多頁自動換頁)
+                系統列印
             </button>
         </div>
     </div>
 
-    <script>
-        const imageObjects = { Before: null, During: null, After: null };
-        const keys = ['Before', 'During', 'After'];
+    <!-- 輸出列印區域 (會動態生成多頁 A4 容器) -->
+    <div id="print-area" class="space-y-6">
+        <!-- 預設先放第一頁 -->
+        <div class="page-container max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-4 sm:p-6" data-page-index="0">
+            <h1 class="text-xl font-bold text-center text-gray-800 mb-3 border-b pb-2">施工照片記錄表</h1>
+            <div class="mb-4 text-xs sm:text-sm">
+                <label class="block font-semibold text-gray-700 mb-1">工程名稱：</label>
+                <input type="text" placeholder="請輸入工程名稱" class="project-name-input w-full border border-gray-300 rounded p-1.5 outline-none">
+            </div>
+            <div class="border border-gray-300 rounded overflow-hidden mb-4">
+                <table class="w-full border-collapse" style="table-layout: fixed;">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700 text-xs">
+                            <th class="border border-gray-300 p-1.5 w-[25%]">階段 / 說明</th>
+                            <th class="border border-gray-300 p-1.5 w-[75%]">照片與施工日期</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs">
+                        <!-- 施工前 -->
+                        <tr>
+                            <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                <span class="font-bold text-blue-600 block mb-1">【施工前】</span>
+                                <textarea rows="3" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                            </td>
+                            <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                                <div class="flex items-center gap-2 no-print">
+                                    <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                    <input type="date" class="date-input border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark(this, 'Before', 0)">
+                                </div>
+                                <div class="no-print">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before', 0)">
+                                </div>
+                                <div class="text-center">
+                                    <canvas class="canvas-elem hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工中 -->
+                        <tr>
+                            <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                <span class="font-bold text-yellow-600 block mb-1">【施工中】</span>
+                                <textarea rows="3" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                            </td>
+                            <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                                <div class="flex items-center gap-2 no-print">
+                                    <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                    <input type="date" class="date-input border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark(this, 'During', 0)">
+                                </div>
+                                <div class="no-print">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During', 0)">
+                                </div>
+                                <div class="text-center">
+                                    <canvas class="canvas-elem hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工完 -->
+                        <tr>
+                            <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                <span class="font-bold text-green-600 block mb-1">【施工完】</span>
+                                <textarea rows="3" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                            </td>
+                            <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                                <div class="flex items-center gap-2 no-print">
+                                    <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                    <input type="date" class="date-input border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark(this, 'After', 0)">
+                                </div>
+                                <div class="no-print">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After', 0)">
+                                </div>
+                                <div class="text-center">
+                                    <canvas class="canvas-elem hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-        function handleBatchImages(event) {
+    <script>
+        // 儲存每一頁各個階段的照片物件 { pageIndex: { Before: imgObj, During: imgObj, After: imgObj } }
+        const pageImages = {};
+
+        function syncProjectName(val) {
+            document.querySelectorAll('.project-name-input').forEach(input => {
+                input.value = val;
+            });
+        }
+
+        // 建立新的一頁 A4 結構
+        function createNewPage(pageIndex) {
+            const container = document.getElementById('print-area');
+            const globalName = document.getElementById('globalProjectName').value;
+
+            const div = document.createElement('div');
+            div.className = 'page-container max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-4 sm:p-6 mt-6';
+            div.setAttribute('data-page-index', pageIndex);
+            div.innerHTML = `
+                <h1 class="text-xl font-bold text-center text-gray-800 mb-3 border-b pb-2">施工照片記錄表 (第 ${pageIndex + 1} 頁)</h1>
+                <div class="mb-4 text-xs sm:text-sm">
+                    <label class="block font-semibold text-gray-700 mb-1">工程名稱：</label>
+                    <input type="text" value="${globalName}" placeholder="請輸入工程名稱" class="project-name-input w-full border border-gray-300 rounded p-1.5 outline-none">
+                </div>
+                <div class="border border-gray-300 rounded overflow-hidden mb-4">
+                    <table class="w-full border-collapse" style="table-layout: fixed;">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700 text-xs">
+                                <th class="border border-gray-300 p-1.5 w-[25%]">階段 / 說明</th>
+                                <th class="border border-gray-300 p-1.5 w-[75%]">照片與施工日期</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-xs">
+                            <tr>
+                                <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                    <span class="font-bold text-blue-600 block mb-1">【施工前】</span>
+                                    <textarea rows="3" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                </td>
+                                <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                                    <div class="flex items-center gap-2 no-print">
+                                        <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                        <input type="date" class="date-input border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark(this, 'Before', ${pageIndex})">
+                                    </div>
+                                    <div class="no-print">
+                                        <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before', ${pageIndex})">
+                                    </div>
+                                    <div class="text-center">
+                                        <canvas class="canvas-elem hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                    <span class="font-bold text-yellow-600 block mb-1">【施工中】</span>
+                                    <textarea rows="3" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                </td>
+                                <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                                    <div class="flex items-center gap-2 no-print">
+                                        <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                        <input type="date" class="date-input border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark(this, 'During', ${pageIndex})">
+                                    </div>
+                                    <div class="no-print">
+                                        <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During', ${pageIndex})">
+                                    </div>
+                                    <div class="text-center">
+                                        <canvas class="canvas-elem hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                    <span class="font-bold text-green-600 block mb-1">【施工完】</span>
+                                    <textarea rows="3" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                </td>
+                                <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                                    <div class="flex items-center gap-2 no-print">
+                                        <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                        <input type="date" class="date-input border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark(this, 'After', ${pageIndex})">
+                                    </div>
+                                    <div class="no-print">
+                                        <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After', ${pageIndex})">
+                                    </div>
+                                    <div class="text-center">
+                                        <canvas class="canvas-elem hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        // 批次匯入多張照片（自動分頁）
+        function handleMultiImages(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
 
-            for (let i = 0; i < Math.min(files.length, 3); i++) {
-                const type = keys[i];
+            const stages = ['Before', 'During', 'After'];
+            
+            // 計算需要幾頁
+            const totalPages = Math.ceil(files.length / 3);
+
+            // 確保頁面足夠
+            for (let p = 0; p < totalPages; p++) {
+                if (!document.querySelector(`[data-page-index="${p}"]`)) {
+                    createNewPage(p);
+                }
+            }
+
+            // 依序將照片填入對應頁面的前、中、後
+            for (let i = 0; i < files.length; i++) {
+                const pageIndex = Math.floor(i / 3);
+                const stageIndex = i % 3;
+                const stage = stages[stageIndex];
                 const file = files[i];
+
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        imageObjects[type] = img;
-                        drawImageWithWatermark(type);
+                reader.onload = (function(pIdx, stg) {
+                    return function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            if (!pageImages[pIdx]) pageImages[pIdx] = {};
+                            pageImages[pIdx][stg] = img;
+                            renderCanvas(pIdx, stg);
+                        };
+                        img.src = e.target.result;
                     };
-                    img.src = e.target.result;
-                };
+                })(pageIndex, stage);
                 reader.readAsDataURL(file);
             }
         }
 
-        function handleSingleImage(event, type) {
+        // 單獨選取某頁某個格子照片
+        function handleSingleImage(event, type, pageIndex) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    imageObjects[type] = img;
-                    drawImageWithWatermark(type);
+                    if (!pageImages[pageIndex]) pageImages[pageIndex] = {};
+                    pageImages[pageIndex][type] = img;
+                    renderCanvas(pageIndex, type);
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        function updateWatermark(type) {
-            if (imageObjects[type]) {
-                drawImageWithWatermark(type);
+        function updateWatermark(dateElem, type, pageIndex) {
+            if (pageImages[pageIndex] && pageImages[pageIndex][type]) {
+                renderCanvas(pageIndex, type);
             }
         }
 
-        function drawImageWithWatermark(type) {
-            const img = imageObjects[type];
-            const canvas = document.getElementById('canvas' + type);
-            const dateInput = document.getElementById('date' + type).value;
-            const ctx = canvas.getContext('2d');
+        // 渲染指定頁面與階段的 Canvas 與浮水印日期
+        function renderCanvas(pageIndex, type) {
+            const img = pageImages[pageIndex][type];
+            const pageDiv = document.querySelector(`[data-page-index="${pageIndex}"]`);
+            if (!pageDiv) return;
 
+            // 根據順序找到對應的 canvas 與 date input
+            const rows = pageDiv.querySelectorAll('tbody tr');
+            let rowIndex = type === 'Before' ? 0 : (type === 'During' ? 1 : 2);
+            const canvas = rows[rowIndex].querySelector('.canvas-elem');
+            const dateInput = rows[rowIndex].querySelector('.date-input').value;
+
+            const ctx = canvas.getContext('2d');
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
@@ -212,7 +342,7 @@
 
         function generatePDF() {
             const element = document.getElementById('print-area');
-            const projectName = document.getElementById('projectName').value || '施工照片';
+            const projectName = document.getElementById('globalProjectName').value || '施工照片報告';
             
             const opt = {
                 margin:       [4, 4, 4, 4],
