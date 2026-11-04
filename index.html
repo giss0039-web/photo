@@ -6,8 +6,6 @@
     <title>施工照片紀錄表</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- 引入 html2pdf 庫以支援 PDF 下載 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100 py-6 px-4">
 
@@ -41,16 +39,19 @@
                     <tr>
                         <td class="border border-gray-300 p-3 bg-gray-50 align-top">
                             <span class="font-bold text-blue-600 block mb-1">【施工前】</span>
-                            <textarea id="descBefore" rows="3" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none"></textarea>
+                            <textarea id="descBefore" rows="4" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-2 text-xs outline-none bg-white relative z-10"></textarea>
                         </td>
                         <td class="border border-gray-300 p-3 space-y-2 align-middle">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">施工日期：</label>
-                                <input type="date" class="w-full border border-gray-300 rounded p-1 text-xs outline-none">
+                                <input type="date" id="dateBefore" class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white" onchange="updateWatermark('Before')">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">選擇照片：</label>
-                                <input type="file" accept="image/*" class="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                <input type="file" id="fileBefore" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'Before')">
+                            </div>
+                            <div class="relative inline-block mt-2 max-w-full">
+                                <canvas id="canvasBefore" class="hidden max-w-full rounded border"></canvas>
                             </div>
                         </td>
                     </tr>
@@ -58,16 +59,19 @@
                     <tr>
                         <td class="border border-gray-300 p-3 bg-gray-50 align-top">
                             <span class="font-bold text-yellow-600 block mb-1">【施工中】</span>
-                            <textarea id="descDuring" rows="3" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none"></textarea>
+                            <textarea id="descDuring" rows="4" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-2 text-xs outline-none bg-white relative z-10"></textarea>
                         </td>
                         <td class="border border-gray-300 p-3 space-y-2 align-middle">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">施工日期：</label>
-                                <input type="date" class="w-full border border-gray-300 rounded p-1 text-xs outline-none">
+                                <input type="date" id="dateDuring" class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white" onchange="updateWatermark('During')">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">選擇照片：</label>
-                                <input type="file" accept="image/*" class="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100">
+                                <input type="file" id="fileDuring" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'During')">
+                            </div>
+                            <div class="relative inline-block mt-2 max-w-full">
+                                <canvas id="canvasDuring" class="hidden max-w-full rounded border"></canvas>
                             </div>
                         </td>
                     </tr>
@@ -75,16 +79,19 @@
                     <tr>
                         <td class="border border-gray-300 p-3 bg-gray-50 align-top">
                             <span class="font-bold text-green-600 block mb-1">【施工完】</span>
-                            <textarea id="descAfter" rows="3" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none"></textarea>
+                            <textarea id="descAfter" rows="4" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-2 text-xs outline-none bg-white relative z-10"></textarea>
                         </td>
                         <td class="border border-gray-300 p-3 space-y-2 align-middle">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">施工日期：</label>
-                                <input type="date" class="w-full border border-gray-300 rounded p-1 text-xs outline-none">
+                                <input type="date" id="dateAfter" class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white" onchange="updateWatermark('After')">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">選擇照片：</label>
-                                <input type="file" accept="image/*" class="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                <input type="file" id="fileAfter" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'After')">
+                            </div>
+                            <div class="relative inline-block mt-2 max-w-full">
+                                <canvas id="canvasAfter" class="hidden max-w-full rounded border"></canvas>
                             </div>
                         </td>
                     </tr>
@@ -94,23 +101,65 @@
 
         <!-- 下載按鈕區 -->
         <div class="text-center">
-            <button onclick="downloadPDF()" class="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg shadow hover:bg-blue-700 transition">
-                下載 PDF 紀錄表
+            <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg shadow hover:bg-blue-700 transition">
+                列印 / 存成 PDF 檔
             </button>
         </div>
     </div>
 
     <script>
-        function downloadPDF() {
-            const element = document.getElementById('print-area');
-            const opt = {
-                margin:       10,
-                filename:     '施工照片紀錄表.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        const imageObjects = { Before: null, During: null, After: null };
+
+        function handleImage(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    imageObjects[type] = img;
+                    drawImageWithWatermark(type);
+                };
+                img.src = e.target.result;
             };
-            html2pdf().from(element).set(opt).save();
+            reader.readAsDataURL(file);
+        }
+
+        function updateWatermark(type) {
+            if (imageObjects[type]) {
+                drawImageWithWatermark(type);
+            }
+        }
+
+        function drawImageWithWatermark(type) {
+            const img = imageObjects[type];
+            const canvas = document.getElementById('canvas' + type);
+            const dateInput = document.getElementById('date' + type).value;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            ctx.drawImage(img, 0, 0);
+
+            if (dateInput) {
+                const fontSize = Math.max(canvas.width * 0.04, 24);
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 6;
+                ctx.lineWidth = 4;
+                
+                const text = dateInput;
+                const metrics = ctx.measureText(text);
+                const x = canvas.width - metrics.width - 20;
+                const y = canvas.height - 20;
+
+                ctx.strokeText(text, x, y);
+                ctx.fillText(text, x, y);
+            }
+
+            canvas.classList.remove('hidden');
         }
     </script>
 
