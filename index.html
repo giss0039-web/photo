@@ -18,20 +18,32 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 py-3 px-2">
+<body class="bg-gray-100 py-4 px-2">
 
-    <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-4" id="print-area">
+    <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-4 sm:p-6" id="print-area">
         <!-- 標題 -->
         <h1 class="text-xl font-bold text-center text-gray-800 mb-3 border-b pb-2">施工照片</h1>
 
         <!-- 基本資訊區 -->
-        <div class="mb-3 text-xs sm:text-sm">
+        <div class="mb-4 text-xs sm:text-sm">
             <label class="block font-semibold text-gray-700 mb-1">工程名稱：</label>
             <input type="text" id="projectName" placeholder="請輸入工程名稱" class="w-full border border-gray-300 rounded p-1.5 focus:ring-1 focus:ring-blue-500 outline-none">
         </div>
 
-        <!-- 施工表格區塊 (擴充至 9 張照片，前中後各 3 組) -->
-        <div class="border border-gray-300 rounded overflow-hidden mb-3">
+        <!-- 一次選取 3 張照片的快捷按鈕 (手機相簿一次選多張) -->
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between no-print">
+            <div>
+                <span class="font-bold text-blue-800 text-xs sm:text-sm block">💡 快速匯入：</span>
+                <span class="text-xs text-blue-600">點擊右側按鈕，可從相簿「一次選取 3 張照片」自動填入前、中、後！</span>
+            </div>
+            <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
+                一次選 3 張照片
+                <input type="file" id="batchFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
+            </label>
+        </div>
+
+        <!-- 施工表格區塊 (維持前、中、後 3 格) -->
+        <div class="border border-gray-300 rounded overflow-hidden mb-4">
             <table class="w-full border-collapse">
                 <thead>
                     <tr class="bg-gray-100 text-gray-700 text-xs">
@@ -40,38 +52,63 @@
                     </tr>
                 </thead>
                 <tbody class="text-xs">
-                    <!-- 施工前 (3組) -->
-                    <script>
-                        function renderRows(typeTitle, typeKey, colorClass) {
-                            let html = '';
-                            for(let i=1; i<=3; i++) {
-                                html += `
-                                <tr>
-                                    ${i === 1 ? `<td rowspan="3" class="border border-gray-300 p-2 bg-gray-50 align-top">
-                                        <span class="font-bold ${colorClass} block mb-1">【${typeTitle}】</span>
-                                        <textarea id="desc${typeKey}" rows="4" placeholder="請輸入${typeTitle}說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10"></textarea>
-                                    </td>` : ''}
-                                    <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                        <div class="flex items-center gap-2 no-print">
-                                            <span class="font-semibold text-gray-600 whitespace-nowrap text-[11px]">日期${i}:</span>
-                                            <input type="date" id="date${typeKey}${i}" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('${typeKey}', ${i})">
-                                        </div>
-                                        <div class="no-print">
-                                            <input type="file" id="file${typeKey}${i}" accept="image/*" class="w-full text-[11px]" onchange="handleImage(event, '${typeKey}', ${i})">
-                                        </div>
-                                        <div class="text-center mt-1">
-                                            <canvas id="canvas${typeKey}${i}" class="hidden max-h-24 mx-auto rounded border shadow-sm"></canvas>
-                                        </div>
-                                    </td>
-                                </tr>`;
-                            }
-                            document.write(html);
-                        }
-                    </script>
-                    
-                    <script>renderRows('施工前', 'Before', 'text-blue-600');</script>
-                    <script>renderRows('施工中', 'During', 'text-yellow-600');</script>
-                    <script>renderRows('施工完', 'After', 'text-green-600');</script>
+                    <!-- 施工前 -->
+                    <tr>
+                        <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                            <span class="font-bold text-blue-600 block mb-1">【施工前】</span>
+                            <textarea id="descBefore" rows="3" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10"></textarea>
+                        </td>
+                        <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                            <div class="flex items-center gap-2 no-print">
+                                <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                <input type="date" id="dateBefore" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('Before')">
+                            </div>
+                            <div class="no-print">
+                                <input type="file" id="fileBefore" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before')">
+                            </div>
+                            <div class="text-center mt-1">
+                                <canvas id="canvasBefore" class="hidden max-h-36 mx-auto rounded border shadow-sm"></canvas>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- 施工中 -->
+                    <tr>
+                        <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                            <span class="font-bold text-yellow-600 block mb-1">【施工中】</span>
+                            <textarea id="descDuring" rows="3" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10"></textarea>
+                        </td>
+                        <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                            <div class="flex items-center gap-2 no-print">
+                                <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                <input type="date" id="dateDuring" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('During')">
+                            </div>
+                            <div class="no-print">
+                                <input type="file" id="fileDuring" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During')">
+                            </div>
+                            <div class="text-center mt-1">
+                                <canvas id="canvasDuring" class="hidden max-h-36 mx-auto rounded border shadow-sm"></canvas>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- 施工完 -->
+                    <tr>
+                        <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                            <span class="font-bold text-green-600 block mb-1">【施工完】</span>
+                            <textarea id="descAfter" rows="3" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white relative z-10"></textarea>
+                        </td>
+                        <td class="border border-gray-300 p-2 space-y-1 align-middle">
+                            <div class="flex items-center gap-2 no-print">
+                                <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
+                                <input type="date" id="dateAfter" class="border border-gray-300 rounded p-1 text-xs outline-none w-full bg-white" onchange="updateWatermark('After')">
+                            </div>
+                            <div class="no-print">
+                                <input type="file" id="fileAfter" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After')">
+                            </div>
+                            <div class="text-center mt-1">
+                                <canvas id="canvasAfter" class="hidden max-h-36 mx-auto rounded border shadow-sm"></canvas>
+                            </div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -88,36 +125,56 @@
     </div>
 
     <script>
-        const imageObjects = {};
+        const imageObjects = { Before: null, During: null, After: null };
+        const keys = ['Before', 'During', 'After'];
 
-        function handleImage(event, type, index) {
+        // 支援一次選取多張照片批次匯入
+        function handleBatchImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            for (let i = 0; i < Math.min(files.length, 3); i++) {
+                const type = keys[i];
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        imageObjects[type] = img;
+                        drawImageWithWatermark(type);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 單獨選取照片
+        function handleSingleImage(event, type) {
             const file = event.target.files[0];
             if (!file) return;
-            const key = type + index;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    imageObjects[key] = img;
-                    drawImageWithWatermark(type, index);
+                    imageObjects[type] = img;
+                    drawImageWithWatermark(type);
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        function updateWatermark(type, index) {
-            const key = type + index;
-            if (imageObjects[key]) {
-                drawImageWithWatermark(type, index);
+        function updateWatermark(type) {
+            if (imageObjects[type]) {
+                drawImageWithWatermark(type);
             }
         }
 
-        function drawImageWithWatermark(type, index) {
-            const key = type + index;
-            const img = imageObjects[key];
-            const canvas = document.getElementById('canvas' + key);
-            const dateInput = document.getElementById('date' + key).value;
+        function drawImageWithWatermark(type) {
+            const img = imageObjects[type];
+            const canvas = document.getElementById('canvas' + type);
+            const dateInput = document.getElementById('date' + type).value;
             const ctx = canvas.getContext('2d');
 
             canvas.width = img.width;
