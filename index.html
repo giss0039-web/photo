@@ -17,7 +17,6 @@
                 box-shadow: none !important;
                 margin: 0 !important;
                 padding: 4mm !important;
-                height: 100vh;
                 page-break-after: always;
                 break-after: page;
             }
@@ -26,7 +25,6 @@
             page-break-after: always;
             break-after: page;
         }
-        /* 嚴格控制照片高度與填滿，避免超出 A4 */
         .photo-canvas {
             width: 100% !important;
             height: 135px !important;
@@ -67,7 +65,7 @@
             <h1 class="text-lg font-bold text-center text-gray-800 mb-2 border-b pb-1">施工照片記錄表</h1>
             <div class="mb-2 text-xs">
                 <label class="block font-semibold text-gray-700 mb-0.5">工程名稱：</label>
-                <input type="text" placeholder="請輸入工程名稱" class="project-name-input w-full border border-gray-300 rounded p-1 outline-none" oninput="syncProjectName(this.value)">
+                <input type="text" placeholder="請輸入工程名稱" class="project-name-input w-full border border-gray-300 rounded p-1 outline-none" oninput="syncData(this, 'project', 0)">
             </div>
             <div class="border border-gray-300 rounded overflow-hidden">
                 <table class="w-full border-collapse" style="table-layout: fixed;">
@@ -82,12 +80,12 @@
                         <tr>
                             <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
                                 <span class="font-bold text-blue-600 block mb-0.5">【施工前】</span>
-                                <textarea rows="2" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                <textarea rows="2" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descBefore', 0)"></textarea>
                             </td>
                             <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1.5 no-print">
                                     <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                    <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="updateWatermark(0, 'Before')">
+                                    <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateBefore', 0); updateWatermark(0, 'Before')">
                                 </div>
                                 <div class="no-print">
                                     <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before', 0)">
@@ -101,12 +99,12 @@
                         <tr>
                             <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
                                 <span class="font-bold text-yellow-600 block mb-0.5">【施工中】</span>
-                                <textarea rows="2" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                <textarea rows="2" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descDuring', 0)"></textarea>
                             </td>
                             <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1.5 no-print">
                                     <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                    <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="updateWatermark(0, 'During')">
+                                    <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateDuring', 0); updateWatermark(0, 'During')">
                                 </div>
                                 <div class="no-print">
                                     <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During', 0)">
@@ -120,12 +118,12 @@
                         <tr>
                             <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
                                 <span class="font-bold text-green-600 block mb-0.5">【施工完】</span>
-                                <textarea rows="2" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                <textarea rows="2" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descAfter', 0)"></textarea>
                             </td>
                             <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1.5 no-print">
                                     <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                    <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="updateWatermark(0, 'After')">
+                                    <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateAfter', 0); updateWatermark(0, 'After')">
                                 </div>
                                 <div class="no-print">
                                     <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After', 0)">
@@ -142,17 +140,39 @@
     </div>
 
     <script>
-        const pageImages = {};
+        // 資料儲存結構：儲存每一頁的文字、日期與圖片
+        const formData = {};
 
-        function syncProjectName(val) {
-            document.querySelectorAll('.project-name-input').forEach(input => {
-                input.value = val;
-            });
+        function getPageData(pageIndex) {
+            if (!formData[pageIndex]) {
+                formData[pageIndex] = {
+                    project: '',
+                    descBefore: '', dateBefore: '', imgBefore: null,
+                    descDuring: '', dateDuring: '', imgDuring: null,
+                    descAfter: '', dateAfter: '', imgAfter: null
+                };
+            }
+            return formData[pageIndex];
+        }
+
+        function syncData(element, field, pageIndex) {
+            const data = getPageData(pageIndex);
+            if (field === 'project') {
+                data.project = element.value;
+                // 同步所有頁面的工程名稱
+                document.querySelectorAll('.project-name-input').forEach((input, idx) => {
+                    input.value = element.value;
+                    getPageData(idx).project = element.value;
+                });
+            } else {
+                data[field] = element.value;
+            }
         }
 
         function createNewPage(pageIndex) {
             const container = document.getElementById('print-area');
-            const currentGlobalName = document.querySelector('.project-name-input') ? document.querySelector('.project-name-input').value : '';
+            const globalProject = getPageData(0).project;
+            getPageData(pageIndex).project = globalProject;
 
             const div = document.createElement('div');
             div.className = 'page-container max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-3 sm:p-4 mt-4';
@@ -161,7 +181,7 @@
                 <h1 class="text-lg font-bold text-center text-gray-800 mb-2 border-b pb-1">施工照片記錄表</h1>
                 <div class="mb-2 text-xs">
                     <label class="block font-semibold text-gray-700 mb-0.5">工程名稱：</label>
-                    <input type="text" value="${currentGlobalName}" placeholder="請輸入工程名稱" class="project-name-input w-full border border-gray-300 rounded p-1 outline-none" oninput="syncProjectName(this.value)">
+                    <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="project-name-input w-full border border-gray-300 rounded p-1 outline-none" oninput="syncData(this, 'project', ${pageIndex})">
                 </div>
                 <div class="border border-gray-300 rounded overflow-hidden">
                     <table class="w-full border-collapse" style="table-layout: fixed;">
@@ -175,12 +195,12 @@
                             <tr>
                                 <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
                                     <span class="font-bold text-blue-600 block mb-0.5">【施工前】</span>
-                                    <textarea rows="2" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                    <textarea rows="2" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descBefore', ${pageIndex})"></textarea>
                                 </td>
                                 <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
                                     <div class="flex items-center gap-1.5 no-print">
                                         <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                        <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="updateWatermark(${pageIndex}, 'Before')">
+                                        <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateBefore', ${pageIndex}); updateWatermark(${pageIndex}, 'Before')">
                                     </div>
                                     <div class="no-print">
                                         <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before', ${pageIndex})">
@@ -193,12 +213,12 @@
                             <tr>
                                 <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
                                     <span class="font-bold text-yellow-600 block mb-0.5">【施工中】</span>
-                                    <textarea rows="2" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                    <textarea rows="2" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descDuring', ${pageIndex})"></textarea>
                                 </td>
                                 <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
                                     <div class="flex items-center gap-1.5 no-print">
                                         <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                        <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="updateWatermark(${pageIndex}, 'During')">
+                                        <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateDuring', ${pageIndex}); updateWatermark(${pageIndex}, 'During')">
                                     </div>
                                     <div class="no-print">
                                         <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During', ${pageIndex})">
@@ -211,12 +231,12 @@
                             <tr>
                                 <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
                                     <span class="font-bold text-green-600 block mb-0.5">【施工完】</span>
-                                    <textarea rows="2" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none"></textarea>
+                                    <textarea rows="2" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descAfter', ${pageIndex})"></textarea>
                                 </td>
                                 <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
                                     <div class="flex items-center gap-1.5 no-print">
                                         <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
-                                        <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="updateWatermark(${pageIndex}, 'After')">
+                                        <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateAfter', ${pageIndex}); updateWatermark(${pageIndex}, 'After')">
                                     </div>
                                     <div class="no-print">
                                         <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After', ${pageIndex})">
@@ -257,8 +277,8 @@
                     return function(e) {
                         const img = new Image();
                         img.onload = function() {
-                            if (!pageImages[pIdx]) pageImages[pIdx] = {};
-                            pageImages[pIdx][stg] = img;
+                            const data = getPageData(pIdx);
+                            data['img' + stg] = img;
                             renderCanvas(pIdx, stg);
                         };
                         img.src = e.target.result;
@@ -275,8 +295,8 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    if (!pageImages[pageIndex]) pageImages[pageIndex] = {};
-                    pageImages[pageIndex][type] = img;
+                    const data = getPageData(pageIndex);
+                    data['img' + type] = img;
                     renderCanvas(pageIndex, type);
                 };
                 img.src = e.target.result;
@@ -285,27 +305,31 @@
         }
 
         function updateWatermark(pageIndex, type) {
-            if (pageImages[pageIndex] && pageImages[pageIndex][type]) {
+            const data = getPageData(pageIndex);
+            if (data['img' + type]) {
                 renderCanvas(pageIndex, type);
             }
         }
 
         function renderCanvas(pageIndex, type) {
-            const img = pageImages[pageIndex][type];
+            const data = getPageData(pageIndex);
+            const img = data['img' + type];
+            if (!img) return;
+
             const pageDiv = document.querySelector(`[data-page-index="${pageIndex}"]`);
             if (!pageDiv) return;
 
             const rows = pageDiv.querySelectorAll('tbody tr');
             let rowIndex = type === 'Before' ? 0 : (type === 'During' ? 1 : 2);
             const canvas = rows[rowIndex].querySelector('.canvas-elem');
-            const dateInput = rows[rowIndex].querySelector('.date-input').value;
+            const dateInputVal = data['date' + type];
 
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
 
-            if (dateInput) {
+            if (dateInputVal) {
                 const fontSize = Math.max(canvas.width * 0.045, 20);
                 ctx.font = `bold ${fontSize}px Arial, sans-serif`;
                 ctx.fillStyle = '#FFFFFF';
@@ -313,7 +337,7 @@
                 ctx.shadowBlur = 6;
                 ctx.lineWidth = 4;
 
-                const text = dateInput;
+                const text = dateInputVal;
                 const metrics = ctx.measureText(text);
                 const x = canvas.width - metrics.width - 25;
                 const y = canvas.height - 25;
@@ -327,8 +351,7 @@
 
         function generatePDF() {
             const element = document.getElementById('print-area');
-            const currentGlobalName = document.querySelector('.project-name-input') ? document.querySelector('.project-name-input').value : '';
-            const projectName = currentGlobalName || '施工照片報告';
+            const projectName = getPageData(0).project || '施工照片報告';
             
             const opt = {
                 margin:       [4, 4, 4, 4],
