@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>施工前中後照片紀錄表</title>
+    <title>施工照片紀錄表</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- 引入 html2pdf 庫以支援 PDF 下載 -->
@@ -13,7 +13,7 @@
 
     <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-6" id="print-area">
         <!-- 標題 -->
-        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6 border-b pb-4">施工前中後照片紀錄表</h1>
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-6 border-b pb-4">施工照片紀錄表</h1>
 
         <!-- 基本資訊區 -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">
@@ -49,4 +49,36 @@
                     <tr>
                         <td class="border border-gray-300 p-3 bg-gray-50 align-top">
                             <span class="font-bold text-blue-600 block mb-1">【施工前】</span>
-                            <textarea id="descBefore" rows="3" placeholder="請輸入施工前說明..." class="w-full border border-gray
+                            <textarea id="descBefore" rows="3" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none"></textarea>
+                        </td>
+                        <td class="border border-gray-300 p-3 text-center align-middle">
+                            <input type="file" accept="image/*" class="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </td>
+                    </tr>
+                    <!-- 施工中 -->
+                    <tr>
+                        <td class="border border-gray-300 p-3 bg-gray-50 align-top">
+                            <span class="font-bold text-yellow-600 block mb-1">【施工中】</span>
+                            <textarea id="descDuring" rows="3" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none"></textarea>
+                        </td>
+                        <td class="border border-gray-300 p-3 text-center align-middle">
+                            <input type="file" accept="image/*" class="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100">
+                        </td>
+                    </tr>
+                    <!-- 施工完 -->
+                    <tr>
+                        <td class="border border-gray-300 p-3 bg-gray-50 align-top">
+                            <span class="font-bold text-green-600 block mb-1">【施工完】</span>
+                            <textarea id="descAfter" rows="3" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none"></textarea>
+                        </td>
+                        <td class="border border-gray-300 p-3 text-center align-middle">
+                            <input type="file" accept="image/*" class="w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
