@@ -17,6 +17,7 @@
                 box-shadow: none !important;
                 margin: 0 !important;
                 padding: 4mm !important;
+                height: 100vh;
                 page-break-after: always;
                 break-after: page;
             }
@@ -25,9 +26,11 @@
             page-break-after: always;
             break-after: page;
         }
+        /* 嚴格限制照片高度與填滿，確保三張剛好塞在 A4 內不超線 */
         .photo-canvas {
             width: 100% !important;
-            height: 135px !important;
+            height: 110px !important;
+            max-height: 110px !important;
             object-fit: cover;
             display: block;
         }
@@ -78,12 +81,12 @@
                     <tbody class="text-xs">
                         <!-- 施工前 -->
                         <tr>
-                            <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
+                            <td class="border border-gray-300 p-1 bg-gray-50 align-top">
                                 <span class="font-bold text-blue-600 block mb-0.5">【施工前】</span>
                                 <textarea rows="2" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descBefore', 0)"></textarea>
                             </td>
-                            <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                <div class="flex items-center gap-1.5 no-print">
+                            <td class="border border-gray-300 p-1 space-y-1 align-middle">
+                                <div class="flex items-center gap-1 no-print">
                                     <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
                                     <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateBefore', 0); updateWatermark(0, 'Before')">
                                 </div>
@@ -97,12 +100,12 @@
                         </tr>
                         <!-- 施工中 -->
                         <tr>
-                            <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
+                            <td class="border border-gray-300 p-1 bg-gray-50 align-top">
                                 <span class="font-bold text-yellow-600 block mb-0.5">【施工中】</span>
                                 <textarea rows="2" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descDuring', 0)"></textarea>
                             </td>
-                            <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                <div class="flex items-center gap-1.5 no-print">
+                            <td class="border border-gray-300 p-1 space-y-1 align-middle">
+                                <div class="flex items-center gap-1 no-print">
                                     <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
                                     <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateDuring', 0); updateWatermark(0, 'During')">
                                 </div>
@@ -116,12 +119,12 @@
                         </tr>
                         <!-- 施工完 -->
                         <tr>
-                            <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
+                            <td class="border border-gray-300 p-1 bg-gray-50 align-top">
                                 <span class="font-bold text-green-600 block mb-0.5">【施工完】</span>
                                 <textarea rows="2" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descAfter', 0)"></textarea>
                             </td>
-                            <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                <div class="flex items-center gap-1.5 no-print">
+                            <td class="border border-gray-300 p-1 space-y-1 align-middle">
+                                <div class="flex items-center gap-1 no-print">
                                     <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
                                     <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateAfter', 0); updateWatermark(0, 'After')">
                                 </div>
@@ -140,7 +143,6 @@
     </div>
 
     <script>
-        // 資料儲存結構：儲存每一頁的文字、日期與圖片
         const formData = {};
 
         function getPageData(pageIndex) {
@@ -159,7 +161,6 @@
             const data = getPageData(pageIndex);
             if (field === 'project') {
                 data.project = element.value;
-                // 同步所有頁面的工程名稱
                 document.querySelectorAll('.project-name-input').forEach((input, idx) => {
                     input.value = element.value;
                     getPageData(idx).project = element.value;
@@ -193,12 +194,12 @@
                         </thead>
                         <tbody class="text-xs">
                             <tr>
-                                <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
+                                <td class="border border-gray-300 p-1 bg-gray-50 align-top">
                                     <span class="font-bold text-blue-600 block mb-0.5">【施工前】</span>
                                     <textarea rows="2" placeholder="請輸入施工前說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descBefore', ${pageIndex})"></textarea>
                                 </td>
-                                <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                    <div class="flex items-center gap-1.5 no-print">
+                                <td class="border border-gray-300 p-1 space-y-1 align-middle">
+                                    <div class="flex items-center gap-1 no-print">
                                         <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
                                         <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateBefore', ${pageIndex}); updateWatermark(${pageIndex}, 'Before')">
                                     </div>
@@ -211,12 +212,12 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
+                                <td class="border border-gray-300 p-1 bg-gray-50 align-top">
                                     <span class="font-bold text-yellow-600 block mb-0.5">【施工中】</span>
                                     <textarea rows="2" placeholder="請輸入施工中說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descDuring', ${pageIndex})"></textarea>
                                 </td>
-                                <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                    <div class="flex items-center gap-1.5 no-print">
+                                <td class="border border-gray-300 p-1 space-y-1 align-middle">
+                                    <div class="flex items-center gap-1 no-print">
                                         <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
                                         <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateDuring', ${pageIndex}); updateWatermark(${pageIndex}, 'During')">
                                     </div>
@@ -229,12 +230,12 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="border border-gray-300 p-1.5 bg-gray-50 align-top">
+                                <td class="border border-gray-300 p-1 bg-gray-50 align-top">
                                     <span class="font-bold text-green-600 block mb-0.5">【施工完】</span>
                                     <textarea rows="2" placeholder="請輸入施工完說明..." class="w-full border border-gray-300 rounded p-1 text-xs outline-none bg-white resize-none" oninput="syncData(this, 'descAfter', ${pageIndex})"></textarea>
                                 </td>
-                                <td class="border border-gray-300 p-1.5 space-y-1 align-middle">
-                                    <div class="flex items-center gap-1.5 no-print">
+                                <td class="border border-gray-300 p-1 space-y-1 align-middle">
+                                    <div class="flex items-center gap-1 no-print">
                                         <span class="font-semibold text-gray-600 whitespace-nowrap text-xs">日期:</span>
                                         <input type="date" class="date-input border border-gray-300 rounded p-0.5 text-xs outline-none w-full bg-white" onchange="syncData(this, 'dateAfter', ${pageIndex}); updateWatermark(${pageIndex}, 'After')">
                                     </div>
@@ -305,10 +306,7 @@
         }
 
         function updateWatermark(pageIndex, type) {
-            const data = getPageData(pageIndex);
-            if (data['img' + type]) {
-                renderCanvas(pageIndex, type);
-            }
+            renderCanvas(pageIndex, type);
         }
 
         function renderCanvas(pageIndex, type) {
