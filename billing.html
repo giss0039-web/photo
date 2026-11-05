@@ -12,27 +12,17 @@
     <header class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold text-slate-800">費用與油資線上申請系統</h1>
-        <p class="text-sm text-slate-500">手機快速登打與發票報銷管理</p>
+        <p class="text-sm text-slate-500">支援多張發票連續登打與即時加總</p>
       </div>
       <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
-        匯出 Excel (CSV)
+        📥 匯出 Excel (CSV)
       </button>
     </header>
-
-    <!-- 快速帶入常用發票捷徑 -->
-    <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl space-y-2">
-      <h2 class="text-sm font-bold text-indigo-900">⚡ 常用發票快速帶入（點擊即可自動填入）：</h2>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="quickFill('歐特儀股份有限公司（擎天岡停車場）', 45, '交通費')" class="bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
-          🅿️ 歐特儀停車費 $45
-        </button>
-      </div>
-    </div>
 
     <!-- 填單區域 -->
     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
       <div class="flex border-b border-slate-200">
-        <button id="tab1" onclick="switchTab('general')" class="py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold">事務支出單</button>
+        <button id="tab1" onclick="switchTab('general')" class="py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold">事務支出單（發票）</button>
         <button id="tab2" onclick="switchTab('mileage')" class="py-2 px-4 text-slate-500 hover:text-slate-700 font-medium">油資申訪單</button>
       </div>
 
@@ -58,26 +48,34 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">商店名稱 / 說明</label>
-          <input type="text" id="g_vendor" placeholder="例: 歐特儀股份有限公司" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="g_vendor" list="vendorList" placeholder="選擇或輸入商店" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <datalist id="vendorList">
+            <option value="歐特儀股份有限公司（擎天岡停車場）">
+            <option value="中油股份有限公司">
+            <option value="遠通電收（高速公路過路費）">
+            <option value="台灣大哥大">
+          </datalist>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">數量</label>
-          <input type="number" id="g_qty" placeholder="數量" value="1" step="any" oninput="calcGeneralTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="g_qty" value="1" step="any" oninput="calcGeneralTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">單位</label>
-          <input type="text" id="g_unit" placeholder="單位" value="項" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="g_unit" value="項" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">單價 ($)</label>
-          <input type="number" id="g_price" placeholder="支出單價" step="any" oninput="calcGeneralTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="g_price" placeholder="請輸入金額" step="any" oninput="calcGeneralTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">總價 ($)</label>
           <input type="number" id="g_total" placeholder="自動計算" readonly class="w-full p-2.5 border rounded-lg bg-slate-50 font-bold text-indigo-600">
         </div>
         <div class="md:col-span-4 text-right">
-          <button type="submit" class="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium transition">＋ 新增支出項目</button>
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold transition shadow-md">
+            ＋ 加入下方清單（可連續新增下一張）
+          </button>
         </div>
       </form>
 
@@ -97,43 +95,51 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">油資單價 (元/公里)</label>
-          <input type="number" id="m_rate" placeholder="5.9" value="5.9" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="m_rate" value="5.9" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">過路費 ($)</label>
-          <input type="number" id="m_highway" placeholder="0" value="0" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="m_highway" value="0" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">合計金額 ($)</label>
           <input type="number" id="m_total" placeholder="自動計算" readonly class="w-full p-2.5 border rounded-lg bg-slate-50 font-bold text-indigo-600">
         </div>
         <div class="md:col-span-4 text-right">
-          <button type="submit" class="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium transition">＋ 新增油資紀錄</button>
+          <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-bold transition shadow-md">
+            ＋ 加入油資清單
+          </button>
         </div>
       </form>
     </div>
 
-    <!-- 表格 -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+    <!-- 累積清單與即時加總表格 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto p-4 space-y-3">
+      <div class="flex justify-between items-center">
+        <h2 class="font-bold text-slate-700">📋 已登打的發票與費用清單（即時加總）</h2>
+        <button onclick="clearAll()" class="text-xs text-rose-600 hover:underline">清空全部清單</button>
+      </div>
       <table class="w-full text-sm text-left text-slate-600 min-w-[600px]">
         <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
           <tr>
-            <th class="px-4 py-3">類型</th>
-            <th class="px-4 py-3">日期</th>
-            <th class="px-4 py-3">案件編號 / 起訖</th>
-            <th class="px-4 py-3">科目</th>
-            <th class="px-4 py-3">商店 / 說明</th>
-            <th class="px-4 py-3 text-right">數量/里程</th>
-            <th class="px-4 py-3 text-right">單價</th>
-            <th class="px-4 py-3 text-right">總價 ($)</th>
-            <th class="px-4 py-3 text-center">操作</th>
+            <th class="px-3 py-2">類型</th>
+            <th class="px-3 py-2">日期</th>
+            <th class="px-3 py-2">案件編號 / 起訖</th>
+            <th class="px-3 py-2">科目</th>
+            <th class="px-3 py-2">商店 / 說明</th>
+            <th class="px-3 py-2 text-right">數量</th>
+            <th class="px-3 py-2 text-right">單價</th>
+            <th class="px-3 py-2 text-right">總價 ($)</th>
+            <th class="px-3 py-2 text-center">操作</th>
           </tr>
         </thead>
-        <tbody id="recordsTable" class="divide-y divide-slate-100"></tbody>
+        <tbody id="recordsTable" class="divide-y divide-slate-100">
+          <tr><td colspan="9" class="text-center py-4 text-slate-400">目前還沒有新增任何發票，請在上方填寫後點選加入</td></tr>
+        </tbody>
         <tfoot class="bg-slate-50 font-bold border-t border-slate-200">
           <tr>
-            <td colspan="7" class="px-4 py-3 text-right">總計金額：</td>
-            <td id="grandTotal" class="px-4 py-3 text-right text-indigo-600 text-base">$ 0</td>
+            <td colspan="7" class="px-4 py-3 text-right">所有發票總計金額：</td>
+            <td id="grandTotal" class="px-4 py-3 text-right text-indigo-600 text-lg">$ 0</td>
             <td></td>
           </tr>
         </tfoot>
@@ -167,14 +173,6 @@
       }
     }
 
-    function quickFill(vendor, price, category) {
-      document.getElementById('g_vendor').value = vendor;
-      document.getElementById('g_price').value = price;
-      document.getElementById('g_category').value = category;
-      document.getElementById('g_qty').value = 1;
-      calcGeneralTotal();
-    }
-
     function calcGeneralTotal() {
       const qty = parseFloat(document.getElementById('g_qty').value) || 0;
       const price = parseFloat(document.getElementById('g_price').value) || 0;
@@ -203,9 +201,11 @@
       };
       records.push(item);
       renderTable();
+      // 清空金額與商店，保留日期與案件編號方便連續輸入下一張
       document.getElementById('g_vendor').value = '';
       document.getElementById('g_price').value = '';
       document.getElementById('g_total').value = '';
+      document.getElementById('g_price').focus();
     }
 
     function addMileageItem(e) {
@@ -233,8 +233,20 @@
       renderTable();
     }
 
+    function clearAll() {
+      if (confirm('確定要清空所有已輸入的清單嗎？')) {
+        records = [];
+        renderTable();
+      }
+    }
+
     function renderTable() {
       const tbody = document.getElementById('recordsTable');
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-slate-400">目前還沒有新增任何發票，請在上方填寫後點選加入</td></tr>`;
+        document.getElementById('grandTotal').innerText = `$ 0`;
+        return;
+      }
       tbody.innerHTML = '';
       let sum = 0;
       records.forEach(r => {
@@ -242,16 +254,16 @@
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50 transition';
         row.innerHTML = `
-          <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs ${r.type==='油資申訪'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800'}">${r.type}</span></td>
-          <td class="px-4 py-3">${r.date}</td>
-          <td class="px-4 py-3">${r.project}</td>
-          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded border border-slate-200 text-xs bg-slate-50">${r.category}</span></td>
-          <td class="px-4 py-3 font-medium text-slate-800">${r.vendor}</td>
-          <td class="px-4 py-3 text-right">${r.qty}</td>
-          <td class="px-4 py-3 text-right">$${r.price}</td>
-          <td class="px-4 py-3 text-right font-semibold text-slate-800">$${r.total.toLocaleString()}</td>
-          <td class="px-4 py-3 text-center">
-            <button onclick="deleteItem(${r.id})" class="text-rose-600 hover:text-rose-800 font-medium text-xs">刪除</button>
+          <td class="px-3 py-2"><span class="px-2 py-1 rounded-full text-xs ${r.type==='油資申訪'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800'}">${r.type}</span></td>
+          <td class="px-3 py-2">${r.date}</td>
+          <td class="px-3 py-2">${r.project}</td>
+          <td class="px-3 py-2"><span class="px-2 py-0.5 rounded border border-slate-200 text-xs bg-slate-50">${r.category}</span></td>
+          <td class="px-3 py-2 font-medium text-slate-800">${r.vendor}</td>
+          <td class="px-3 py-2 text-right">${r.qty}</td>
+          <td class="px-3 py-2 text-right">$${r.price}</td>
+          <td class="px-3 py-2 text-right font-semibold text-slate-800">$${r.total.toLocaleString()}</td>
+          <td class="px-3 py-2 text-center">
+            <button type="button" onclick="deleteItem(${r.id})" class="text-rose-600 hover:text-rose-800 font-medium text-xs">刪除</button>
           </td>
         `;
         tbody.appendChild(row);
@@ -264,7 +276,7 @@
         alert('目前無資料可匯出！');
         return;
       }
-      let csvContent = "\uFEFF類型,日期,案件編號/起迄,科目,商店/說明,數量,單價,總價\n";
+      let csvContent = "\uFEFF類型,日期,案件編號/起訖,科目,商店/說明,數量,單價,總價\n";
       records.forEach(r => {
         csvContent += `"${r.type}","${r.date}","${r.project}","${r.category}","${r.vendor}","${r.qty}","${r.price}","${r.total}"\n`;
       });
