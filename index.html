@@ -20,16 +20,18 @@
                 margin: 0 !important;
                 padding: 0 !important;
                 height: 285mm !important;
-                page-break-after: avoid;
-                break-after: avoid;
+                page-break-after: always;
+                break-after: page;
             }
         }
         .page-container {
+            page-break-after: always;
+            break-after: page;
             box-sizing: border-box;
             width: 100%;
             max-width: 210mm;
             height: 285mm;
-            margin: 0 auto;
+            margin: 0 auto 5mm auto;
             background: white;
             padding: 8mm;
             display: flex;
@@ -38,8 +40,8 @@
         }
         .photo-canvas {
             width: 100% !important;
-            height: 90px !important;
-            max-height: 90px !important;
+            height: 85px !important;
+            max-height: 85px !important;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -54,8 +56,8 @@
         <h1 class="text-base font-bold text-center text-gray-800">施工照片產生器</h1>
         <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div>
-                <span class="font-bold text-blue-800 text-xs block">💡 快速批次上傳：</span>
-                <span class="text-xs text-blue-600">一次選取多張照片，會自動依序填入施工前、中、後！</span>
+                <span class="font-bold text-blue-800 text-xs block">💡 批次上傳多張照片：</span>
+                <span class="text-xs text-blue-600">一次選取多張照片（例如 6 張），會自動每 3 張一頁分配，且每頁表頭可獨立修改！</span>
             </div>
             <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
                 選擇多張照片
@@ -69,164 +71,229 @@
         </div>
     </div>
 
-    <!-- 輸出列印區域 (保證永遠只有單頁) -->
-    <div id="print-area">
-        <div class="page-container shadow-lg rounded-xl">
-            <div class="border border-gray-400 rounded overflow-hidden w-full bg-white">
-                <!-- 表頭區域 -->
-                <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
-                    <thead>
-                        <tr>
-                            <th colspan="2" class="border-b border-gray-400 p-2 text-center text-sm font-bold bg-gray-50 tracking-widest">施 工 照 片</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 w-[22%] text-center">工程名稱</td>
-                            <td class="border-b border-gray-400 p-1.5">
-                                <input type="text" placeholder="請輸入工程名稱" class="w-full outline-none bg-transparent">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
-                            <td class="border-b border-gray-400 p-1.5">
-                                <input type="text" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
-                            <td class="border-b border-gray-400 p-1.5">
-                                <input type="text" placeholder="請輸入施作項目" class="w-full outline-none bg-transparent">
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <!-- 照片與階段表格 -->
-                <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-700">
-                            <th class="border-r border-b border-gray-400 p-1.5 w-[22%] text-center">階段 / 說明</th>
-                            <th class="border-b border-gray-400 p-1.5 w-[78%] text-center">照片與施工日期</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- 施工前 -->
-                        <tr>
-                            <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-blue-600">
-                                施<br>工<br>前
-                            </td>
-                            <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
-                                <div class="flex items-center gap-1 no-print">
-                                    <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                    <input type="date" id="date_Before" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
-                                </div>
-                                <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before')">
-                                </div>
-                                <div class="text-center">
-                                    <canvas id="canvas_Before" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- 施工中 -->
-                        <tr>
-                            <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-yellow-600">
-                                施<br>工<br>中
-                            </td>
-                            <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
-                                <div class="flex items-center gap-1 no-print">
-                                    <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                    <input type="date" id="date_During" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
-                                </div>
-                                <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During')">
-                                </div>
-                                <div class="text-center">
-                                    <canvas id="canvas_During" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- 施工後 -->
-                        <tr>
-                            <td class="border-r border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-green-600">
-                                施<br>工<br>後
-                            </td>
-                            <td class="p-1.5 space-y-1 align-middle">
-                                <div class="flex items-center gap-1 no-print">
-                               張<span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                    <input type="date" id="date_After" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
-                                </div>
-                                <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After')">
-                                </div>
-                                <div class="text-center">
-                                    <canvas id="canvas_After" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <!-- 輸出列印區域 -->
+    <div id="print-area"></div>
 
     <script>
         const todayStr = new Date().toISOString().split('T')[0];
-        document.getElementById('date_Before').value = todayStr;
-        document.getElementById('date_During').value = todayStr;
-        document.getElementById('date_After').value = todayStr;
+        let pageDataList = [];
 
-        function processImage(file, type) {
+        // 初始化預設第 0 頁
+        pageDataList.push({
+            project: '', vendor: '', item: '',
+            dateBefore: todayStr, imgBefore: null,
+            dateDuring: todayStr, imgDuring: null,
+            dateAfter: todayStr, imgAfter: null
+        });
+
+        function renderAllPages() {
+            const container = document.getElementById('print-area');
+            container.innerHTML = '';
+
+            pageDataList.forEach((data, pIdx) => {
+                const div = document.createElement('div');
+                div.className = 'page-container shadow-lg rounded-xl';
+                div.innerHTML = `
+                    <div class="border border-gray-400 rounded overflow-hidden w-full bg-white">
+                        <!-- 表頭區域 -->
+                        <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
+                            <thead>
+                                <tr>
+                                    <th colspan="2" class="border-b border-gray-400 p-2 text-center text-sm font-bold bg-gray-50 tracking-widest">施 工 照 片 (第 ${pIdx + 1} 頁)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 w-[22%] text-center">工程名稱</td>
+                                    <td class="border-b border-gray-400 p-1.5">
+                                        <input type="text" value="${data.project}" placeholder="請輸入工程名稱" class="w-full outline-none bg-transparent" oninput="pageDataList[${pIdx}].project = this.value">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
+                                    <td class="border-b border-gray-400 p-1.5">
+                                        <input type="text" value="${data.vendor}" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent" oninput="pageDataList[${pIdx}].vendor = this.value">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
+                                    <td class="border-b border-gray-400 p-1.5">
+                                        <input type="text" value="${data.item}" placeholder="請輸入施作項目" class="w-full outline-none bg-transparent" oninput="pageDataList[${pIdx}].item = this.value">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- 照片與階段表格 -->
+                        <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-700">
+                                    <th class="border-r border-b border-gray-400 p-1.5 w-[22%] text-center">階段 / 說明</th>
+                                    <th class="border-b border-gray-400 p-1.5 w-[78%] text-center">照片與施工日期</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 施工前 -->
+                                <tr>
+                                    <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-blue-600">
+                                        施<br>工<br>前
+                                    </td>
+                                    <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
+                                        <div class="flex items-center gap-1 no-print">
+                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
+                                            <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pageDataList[${pIdx}].dateBefore = this.value; drawCanvas(${pIdx}, 'Before');">
+                                        </div>
+                                        <div class="no-print">
+                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
+                                        </div>
+                                        <div class="text-center">
+                                            <canvas id="canvas_${pIdx}_Before" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgBefore ? '' : 'hidden'}"></canvas>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 施工中 -->
+                                <tr>
+                                    <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-yellow-600">
+                                        施<br>工<br>中
+                                    </td>
+                                    <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
+                                        <div class="flex items-center gap-1 no-print">
+                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
+                                            <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pageDataList[${pIdx}].dateDuring = this.value; drawCanvas(${pIdx}, 'During');">
+                                        </div>
+                                        <div class="no-print">
+                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'During')">
+                                        </div>
+                                        <div class="text-center">
+                                            <canvas id="canvas_${pIdx}_During" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgDuring ? '' : 'hidden'}"></canvas>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 施工後 -->
+                                <tr>
+                                    <td class="border-r border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-green-600">
+                                        施<br>工<br>後
+                                    </td>
+                                    <td class="p-1.5 space-y-1 align-middle">
+                                        <div class="flex items-center gap-1 no-print">
+                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
+                                            <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pageDataList[${pIdx}].dateAfter = this.value; drawCanvas(${pIdx}, 'After');">
+                                        </div>
+                                        <div class="no-print">
+                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'After')">
+                                        </div>
+                                        <div class="text-center">
+                                            <canvas id="canvas_${pIdx}_After" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgAfter ? '' : 'hidden'}"></canvas>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(div);
+
+                // 重新繪製已上傳的圖片
+                if (data.imgBefore) drawCanvas(pIdx, 'Before', false);
+                if (data.imgDuring) drawCanvas(pIdx, 'During', false);
+                if (data.imgAfter) drawCanvas(pIdx, 'After', false);
+            });
+        }
+
+        function handleBatchImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const totalPages = Math.ceil(files.length / 3);
+            
+            // 擴充頁面陣列
+            while (pageDataList.length < totalPages) {
+                // 繼承第一頁的工程名稱、廠商，但施作項目可獨立
+                const base = pageDataList[0];
+                pageDataList.push({
+                    project: base.project, vendor: base.vendor, item: '',
+                    dateBefore: todayStr, imgBefore: null,
+                    dateDuring: todayStr, imgDuring: null,
+                    dateAfter: todayStr, imgAfter: null
+                });
+            }
+
+            let fileIdx = 0;
+            const stages = ['Before', 'During', 'After'];
+
+            for (let p = 0; p < totalPages; p++) {
+                for (let s = 0; s < 3; s++) {
+                    if (fileIdx < files.length) {
+                        const file = files[fileIdx++];
+                        const stage = stages[s];
+                        const reader = new FileReader();
+                        
+                        reader.onload = (function(pIdx, stg) {
+                            return function(e) {
+                                const img = new Image();
+                                img.onload = function() {
+                                    pageDataList[pIdx]['img' + stg] = img;
+                                    drawCanvas(pIdx, stg);
+                                };
+                                img.src = e.target.result;
+                            };
+                        })(p, stage);
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+            renderAllPages();
+        }
+
+        function handleImageUpload(event, pIdx, type) {
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    const canvas = document.getElementById(`canvas_${type}`);
-                    const dateInput = document.getElementById(`date_${type}`);
-                    const dateVal = dateInput ? dateInput.value : todayStr;
-
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-
-                    if (dateVal) {
-                        const fontSize = Math.max(canvas.width * 0.045, 20);
-                        ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.shadowColor = '#000000';
-                        ctx.shadowBlur = 6;
-                        ctx.lineWidth = 4;
-
-                        const metrics = ctx.measureText(dateVal);
-                        const x = canvas.width - metrics.width - 25;
-                        const y = canvas.height - 25;
-
-                        ctx.strokeText(dateVal, x, y);
-                        ctx.fillText(dateVal, x, y);
-                    }
-
-                    canvas.classList.remove('hidden');
+                    pageDataList[pIdx]['img' + type] = img;
+                    drawCanvas(pIdx, type);
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        function handleSingleImage(event, type) {
-            processImage(event.target.files[0], type);
+        function drawCanvas(pIdx, type, reload=true) {
+            const data = pageDataList[pIdx];
+            const img = data['img' + type];
+            if (!img) return;
+
+            const canvas = document.getElementById(`canvas_${pIdx}_${type}`);
+            if (!canvas) return;
+
+            const dateVal = data['date' + type] || todayStr;
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            if (dateVal) {
+                const fontSize = Math.max(canvas.width * 0.045, 20);
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 6;
+                ctx.lineWidth = 4;
+
+                const metrics = ctx.measureText(dateVal);
+                const x = canvas.width - metrics.width - 25;
+                const y = canvas.height - 25;
+
+                ctx.strokeText(dateVal, x, y);
+                ctx.fillText(dateVal, x, y);
+            }
+            canvas.classList.remove('hidden');
         }
 
-        function handleBatchImages(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-            const stages = ['Before', 'During', 'After'];
-            for (let i = 0; i < Math.min(files.length, 3); i++) {
-                processImage(files[i], stages[i]);
-            }
-        }
+        // 初始化第一次渲染
+        renderAllPages();
     </script>
 
 </body>
