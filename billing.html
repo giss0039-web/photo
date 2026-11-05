@@ -47,15 +47,15 @@
       <form id="generalForm" onsubmit="addGeneralItem(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">日期</label>
-          <input type="date" id="g_date" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="date" id="g_date" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white text-slate-800">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">案件編號</label>
-          <input type="text" id="g_project" placeholder="例: 2506261" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="g_project" placeholder="例: 2506261" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">會計科目</label>
-          <select id="g_category" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <select id="g_category" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
             <option value="交通費">交通費</option>
             <option value="燃料費">燃料費</option>
             <option value="印刷費">印刷費</option>
@@ -65,7 +65,7 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">商店名稱 / 說明</label>
-          <input type="text" id="g_vendor" list="vendorList" placeholder="例: 歐特儀股份有限公司" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="g_vendor" list="vendorList" placeholder="例: 歐特儀股份有限公司" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
           <datalist id="vendorList">
             <option value="歐特儀股份有限公司（擎天岡停車場）">
             <option value="中油股份有限公司">
@@ -75,15 +75,15 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">數量</label>
-          <input type="number" id="g_qty" value="1" step="any" oninput="calcGeneralTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="g_qty" value="1" step="any" oninput="calcGeneralTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">單位</label>
-          <input type="text" id="g_unit" value="項" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="g_unit" value="項" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">單價 ($)</label>
-          <input type="number" id="g_price" placeholder="請輸入金額" step="any" oninput="calcGeneralTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="g_price" placeholder="請輸入金額" step="any" oninput="calcGeneralTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">總價 ($)</label>
@@ -100,23 +100,23 @@
       <form id="mileageForm" onsubmit="addMileageItem(event)" class="hidden grid-cols-1 md:grid-cols-4 gap-3 text-sm">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">日期</label>
-          <input type="date" id="m_date" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="date" id="m_date" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div class="md:col-span-2">
           <label class="block text-xs font-semibold text-slate-600 mb-1">起訖地點說明</label>
-          <input type="text" id="m_route" placeholder="例: 公司 -> 蘆竹工地" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="m_route" placeholder="例: 公司 -> 蘆竹工地" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">里程數 (公里)</label>
-          <input type="number" id="m_km" placeholder="公里數" step="any" oninput="calcMileageTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="m_km" placeholder="公里數" step="any" oninput="calcMileageTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">油資單價 (元/公里)</label>
-          <input type="number" id="m_rate" value="5.9" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="m_rate" value="5.9" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">過路費 ($)</label>
-          <input type="number" id="m_highway" value="0" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="m_highway" value="0" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">合計金額 ($)</label>
@@ -324,7 +324,7 @@
         alert('目前無資料可匯出！');
         return;
       }
-      let csvContent = "\uFEFF類型,日期,案件編號/起迄,科目,商店/說明,數量,單價,總價\n";
+      let csvContent = "\uFEFF類型,日期,案件編號/起訖,科目,商店/說明,數量,單價,總價\n";
       records.forEach(r => {
         csvContent += `"${r.type}","${r.date}","${r.project}","${r.category}","${r.vendor}","${r.qty}","${r.price}","${r.total}"\n`;
       });
