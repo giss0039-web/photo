@@ -3,324 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>施工照片報告產生器</title>
+    <title>施工照片報告</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: "Microsoft JhengHei", sans-serif;
-        }
-        body {
-            background-color: #f0f4f8;
+        @page {
+            size: A4 portrait;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
-        /* 上方工具列 */
-        .toolbar {
-            background-color: white;
-            width: 100%;
-            max-width: 800px;
-            border: 1px solid #dcdfe6;
-            border-radius: 4px;
-            padding: 15px;
-            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            input, select { border: none !important; background: transparent !important; }
+            .page-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm 12mm !important;
+                height: 297mm !important;
+                page-break-after: always;
+                break-after: page;
+            }
         }
-        .upload-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px dashed #e4e7ed;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-        }
-        .upload-tips {
-            font-size: 14px;
-            color: #606266;
-        }
-        .upload-tips span {
-            color: #e6a23c;
-            margin-right: 5px;
-        }
-        .upload-tips p {
-            margin: 5px 0 0 0;
-            color: #909399;
-            font-size: 12px;
-        }
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .btn-blue-outline {
-            background: transparent;
-            border: 1px solid #409eff;
-            color: #409eff;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-blue-outline:hover {
-            background: #ecf5ff;
-        }
-        .file-input-wrapper input[type="file"] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        .btn-submit {
-            background-color: #409eff;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
-        }
-        .btn-submit:hover {
-            background-color: #66b1ff;
-        }
-
-        /* 下方 A4 預覽區面 */
-        .a4-page {
-            background-color: white;
+        .page-container {
+            page-break-after: always;
+            break-after: page;
+            box-sizing: border-box;
             width: 210mm;
-            min-height: 297mm;
-            padding: 20mm 15mm;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            height: 297mm;
+            margin: 0 auto 10px auto;
+            background: white;
+            padding: 10mm 12mm;
             display: flex;
             flex-direction: column;
         }
         
-        /* 表格樣式 */
-        table {
+        /* 比照標準工程檔案樣式 */
+        .report-table {
             width: 100%;
+            height: 100%;
             border-collapse: collapse;
+            border: 2px solid #000000;
             table-layout: fixed;
         }
-        th, td {
-            border: 1.5px solid #000;
-            padding: 8px;
-            text-align: center;
+        .report-table th, .report-table td {
+            border: 1px solid #000000;
+            padding: 0;
+            margin: 0;
             vertical-align: middle;
-        }
-        
-        /* 標題與基本資料欄位 */
-        .main-title {
-            font-size: 22px;
-            font-weight: bold;
-            letter-spacing: 10px;
-            padding: 12px;
-        }
-        .label-cell {
-            font-weight: bold;
-            font-size: 14px;
-            width: 25%;
-            background-color: #fafafa;
-        }
-        .input-cell {
-            width: 75%;
-            text-align: left;
-        }
-        .input-cell input[type="text"] {
-            width: 100%;
-            border: none;
-            outline: none;
-            font-size: 14px;
-            color: #000;
-            background: transparent;
-        }
-
-        /* 照片區塊 */
-        .photo-row {
-            height: 75mm;
-        }
-        .stage-cell {
-            font-size: 18px;
-            font-weight: bold;
-            writing-mode: vertical-lr;
-            letter-spacing: 5px;
-            width: 25%;
-            background-color: #fafafa;
-        }
-        .content-cell {
-            width: 75%;
-            position: relative;
-            padding: 10px;
-            text-align: right;
-            vertical-align: top;
-            height: 100%;
-        }
-        .date-picker-wrapper {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
-            color: #606266;
-            margin-bottom: 5px;
-            position: relative;
-            z-index: 10;
-        }
-        .date-picker-wrapper input[type="date"] {
-            border: 1px solid #dcdfe6;
-            border-radius: 4px;
-            padding: 3px 5px;
-            color: #606266;
-            outline: none;
-        }
-        
-        /* 圖片容器與預覽 */
-        .photo-container {
-            position: absolute;
-            top: 40px;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            border: 1px dashed #c0c4cc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            cursor: pointer;
-            background-color: #fff;
-        }
-        .photo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* 確保步道相片按比例縮放，不變形 */
-        }
-        .image-placeholder {
-            font-size: 13px;
-            color: #909399;
-            writing-mode: vertical-lr;
-            letter-spacing: 2px;
-            line-height: 1.5;
             text-align: center;
-            pointer-events: none;
         }
-        .photo-container:hover {
-            border-color: #409eff;
+        
+        .photo-box {
+            width: 100%;
+            height: 100%;
+            min-height: 175px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            background: #ffffff;
         }
-        .photo-container:hover .image-placeholder {
-            color: #409eff;
+        
+        .photo-canvas {
+            max-width: 95%;
+            max-height: 195px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
         }
 
-        /* 列印最佳化設定 */
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
-            .toolbar {
-                display: none;
-            }
-            .a4-page {
-                box-shadow: none;
-                width: 210mm;
-                height: 297mm;
-                padding: 20mm 15mm;
-                page-break-after: always;
-            }
-            .photo-container {
-                border: none;
-            }
+        /* 精確設定左側欄位直排文字 */
+        .vertical-text {
+            writing-mode: vertical-rl;
+            letter-spacing: 4px;
+            font-size: 15px;
+            font-weight: 500;
+            font-family: "標楷體", "DFKai-SB", "Microsoft JhengHei", serif;
+            margin: 0 auto;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 py-3 px-2">
 
-    <!-- 上方操作面板 -->
-    <div class="toolbar">
-        <div class="upload-section">
-            <div class="upload-tips">
-                <div><span>★</span>批次上傳照片：</div>
-                <p>選取多張照片，自動依序分配進施工前、中、後！</p>
+    <!-- 全域控制列 (不印出) -->
+    <div class="max-w-xl mx-auto mb-4 p-3 bg-white shadow rounded-xl no-print space-y-2 border border-gray-200">
+        <h1 class="text-base font-bold text-center text-gray-800">施工照片報告產生器</h1>
+        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-2">
+            <div>
+                <span class="font-bold text-blue-900 text-xs block">💡 批次上傳照片：</span>
+                <span class="text-xs text-blue-700">選擇多張照片，自動每 3 張分配一頁 A4！</span>
             </div>
-            <div class="file-input-wrapper">
-                <button class="btn-blue-outline">選擇多張照片</button>
-                <input type="file" id="batchUpload" multiple accept="image/*" onchange="handleBatchUpload(this)">
-            </div>
+            <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
+                選擇多張照片
+                <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
+            </label>
         </div>
-        <button class="btn-submit" onclick="window.print()">
+        <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg shadow hover:bg-blue-700 text-sm transition">
             🖨️ 點我列印 / 存成 PDF 檔案
         </button>
     </div>
 
-    <!-- 下方 A4 報告紙張 -->
-    <div class="a4-page">
-        <table>
-            <!-- 大標題 -->
-            <tr>
-                <td colspan="2" class="main-title">施 工 照 片</td>
-            </tr>
-            <!-- 基本資料欄 -->
-            <tr>
-                <td class="label-cell">工程名稱</td>
-                <td class="input-cell"><input type="text" value="新北市客家文化園區景觀設施及特色遊具工"></td>
-            </tr>
-            <tr>
-                <td class="label-cell">承攬廠商</td>
-                <td class="input-cell"><input type="text" value="嘉大興營造股份有限公司"></td>
-            </tr>
-            <tr>
-                <td class="label-cell">施作項目</td>
-                <td class="input-cell"><input type="text" value="施工圖錄"></td>
-            </tr>
+    <!-- 輸出列印區域 -->
+    <div id="print-area"></div>
+
+    <script>
+        const todayStr = new Date().toISOString().split('T')[0];
+        let globalProject = '';
+        let globalVendor = '';
+        let pagesData = [];
+
+        // 初始化第 1 頁
+        pagesData.push({
+            item: '混凝土工程',
+            dateBefore: todayStr, imgBefore: null,
+            dateDuring: todayStr, imgDuring: null,
+            dateAfter: todayStr, imgAfter: null
+        });
+
+        function renderAllPages() {
+            const container = document.getElementById('print-area');
+            container.innerHTML = '';
+
+            pagesData.forEach((data, pIdx) => {
+                const div = document.createElement('div');
+                div.className = 'page-container shadow-xl rounded-sm';
+
+                div.innerHTML = `
+                    <table class="report-table">
+                        <!-- 大標題 -->
+                        <tr style="height: 42px;">
+                            <th colspan="2" class="text-lg font-bold tracking-[10px] bg-white text-black font-serif" style="font-family: '標楷體', 'DFKai-SB', serif;">
+                                施 工 照 片
+                            </th>
+                        </tr>
+                        <!-- 工程名稱 (第一頁打，其他頁同步帶出) -->
+                        <tr style="height: 36px;">
+                            <td class="w-[18%] font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">工程名稱</td>
+                            <td class="w-[82%] text-left px-2">
+                                <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalProject(this.value)">
+                            </td>
+                        </tr>
+                        <!-- 承攬廠商 (第一頁打，其他頁同步帶出) -->
+                        <tr style="height: 36px;">
+                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">承攬廠商</td>
+                            <td class="text-left px-2">
+                                <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalVendor(this.value)">
+                            </td>
+                        </tr>
+                        <!-- 施作項目 (可選可自訂輸入，本頁獨立) -->
+                        <tr style="height: 36px;">
+                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">施作項目</td>
+                            <td class="text-left px-2">
+                                <input type="text" list="itemOptions" value="${data.item}" placeholder="請輸入或選擇施作項目" class="w-full outline-none text-sm font-serif bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
+                                <datalist id="itemOptions">
+                                    <option value="混凝土工程">
+                                    <option value="假設工程">
+                                    <option value="游具安裝">
+                                </datalist>
+                            </td>
+                        </tr>
+                        <!-- 施工前 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white w-[10%]">
+                                <div class="vertical-text">施工前</div>
+                            </td>
+                            <td class="w-[90%]">
+                                <div class="w-full h-full flex flex-col justify-between p-1">
+                                    <div class="flex items-center justify-end gap-1 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'Before', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'Before')">
+                                        <input type="file" id="file_${pIdx}_Before" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
+                                        <canvas id="canvas_${pIdx}_Before" class="photo-canvas ${data.imgBefore ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgBefore ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工中 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工中</div>
+                            </td>
+                            <td>
+                                <div class="w-full h-full flex flex-col justify-between p-1">
+                                    <div class="flex items-center justify-end gap-1 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'During', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'During')">
+                                        <input type="file" id="file_${pIdx}_During" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'During')">
+                                        <canvas id="canvas_${pIdx}_During" class="photo-canvas ${data.imgDuring ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgDuring ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工後 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工後</div>
+                            </td>
+                            <td>
+                                <div class="w-full h-full flex flex-col justify-between p-1">
+                                    <div class="flex items-center justify-end gap-1 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'After', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'After')">
+                                        <input type="file" id="file_${pIdx}_After" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'After')">
+                                        <canvas id="canvas_${pIdx}_After" class="photo-canvas ${data.imgAfter ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgAfter ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                `;
+                container.appendChild(div);
+
+                if (data.imgBefore) drawCanvas(pIdx, 'Before');
+                if (data.imgDuring) drawCanvas(pIdx, 'During');
+                if (data.imgAfter) drawCanvas(pIdx, 'After');
+            });
+        }
+
+        function triggerFileInput(pIdx, type) {
+            document.getElementById(`file_${pIdx}_${type}`).click();
+        }
+
+        function syncGlobalProject(val) {
+            globalProject = val;
+            document.querySelectorAll('input[placeholder="請輸入工程名稱"]').forEach(input => input.value = val);
+        }
+
+        function syncGlobalVendor(val) {
+            globalVendor = val;
+            document.querySelectorAll('input[placeholder="請輸入承攬廠商"]').forEach(input => input.value = val);
+        }
+
+        function updateDate(pIdx, type, val) {
+            pagesData[pIdx]['date' + type] = val;
+            drawCanvas(pIdx, type);
+        }
+
+        function handleBatchImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const totalPages = Math.ceil(files.length / 3);
             
-            <!-- 施工前 -->
-            <tr class="photo-row">
-                <td class="stage-cell">施工前</td>
-                <td class="content-cell">
-                    <div class="date-picker-wrapper">
-                        <label>拍攝日期：</label>
-                        <input type="date" value="2026-11-05">
-                    </div>
-                    <!-- 隱藏的 Input 移到外側防止結構被覆蓋 -->
-                    <input type="file" id="imgInput1" accept="image/*" style="display:none;" onchange="previewSingle(this, 'preview1')">
-                    <div class="photo-container" onclick="triggerSingleUpload('imgInput1')">
-                        <div id="preview1" class="image-placeholder">點擊框內<br>上傳照片</div>
-                    </div>
-                </td>
-            </tr>
-            
-            <!-- 施工中 -->
-            <tr class="photo-row">
-                <td class="stage-cell">施工中</td>
-                <td class="content-cell">
-                    <div class="date-picker-wrapper">
-                        <label>拍攝日期：</label>
-                        <input type="date" value="2026-11-05">
-                    </div>
-                    <input type="file" id="imgInput2" accept="image/*" style="display:none;" onchange="previewSingle(this, 'preview2')">
-                    <div class="photo-container" onclick="triggerSingleUpload('imgInput2')">
-                        <div id="preview2" class="image-placeholder">點擊框內<br>上傳照片</div>
-                    </div>
-                </td>
-            </tr>
-            
-            <!-- 施工後 -->
-            <tr class="photo-row">
-                <td class="stage-cell">施工後</td>
-                <td class="content-cell">
-                    <div class="date-picker-wrapper">
-                        <label>拍攝日期：</label>
-                        <input type="date" value="2026-11-05">
-                    </div>
-                    <input type="file" id="imgInput3" accept="image/*" style="display:none;" onchange="previewSingle(this, 'preview3')">
-                    <div class="photo-container" onclick="triggerSingleUpload('imgInput3')">
-                        <div id="preview3" class="image-placeholder">點擊框內<br>上傳照片</div>
-                    </div>
-                </td>
-            </tr>
+            while (pagesData.length < totalPages) {
+                pagesData.push({
+                    item: pagesData[0].item || '混凝土工程',
+                    dateBefore: todayStr, imgBefore: null,
+                    dateDuring: todayStr, imgDuring: null,
+                    dateAfter: todayStr, imgAfter: null
+                });
+            }
+            pagesData = pagesData.slice(0, totalPages);
+
+            let fileIdx = 0;
+            const stages = ['Before', 'During', 'After'];
+
+            for (let p = 0; p < totalPages; p++) {
+                for (let s = 0; s < 3; s++) {
+                    if (fileIdx < files.length) {
+                        const file = files[fileIdx++];
+                        const stage = stages[s];
+                        const reader = new FileReader();
+                        
+                        reader.onload = (function(pIdx, stg) {
+                            return function(e) {
+                                const img = new Image();
+                                img.onload = function() {
+                                    pagesData[pIdx]['img' + stg] = img;
+                                    drawCanvas(pIdx, stg);
+                                };
+                                img.src = e.target.result;
+                            };
+                        })(p, stage);
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+            renderAllPages();
+        }
+
+        function handleImageUpload(event, pIdx, type) {
+            event.stopPropagation();
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    pagesData[pIdx]['img' + type] = img;
+                    drawCanvas(pIdx, type);
+                    renderAllPages();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function drawCanvas(pIdx, type) {
+            const data = pagesData[pIdx];
+            const img = data['img' + type];
+            if (!img) return;
+
+            const canvas = document.getElementById(`canvas_${pIdx}_${type}`);
+            if (!canvas) return;
+
+            const dateVal = data['date' + type] || todayStr;
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            // 照片右下角自動加黃色壓印日期 (YYYY.MM.DD)
+            if (dateVal) {
+                const formattedDate = dateVal.replace(/-/g, '.');
+                const fontSize = Math.max(canvas.width * 0.038, 18);
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                ctx.fillStyle = '#FFC000';
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 4;
+                ctx.lineWidth = 2;
+
+                const metrics = ctx.measureText(formattedDate);
+                const x = canvas.width - metrics.width - 20;
+                const y = canvas.height - 20;
+
+                ctx.strokeText(formattedDate, x, y);
+                ctx.fillText(formattedDate, x, y);
+            }
+            canvas.classList.remove('hidden');
+        }
+
+        // 初始化渲染
+        renderAllPages();
+    </script>
+
+</body>
+</html>
