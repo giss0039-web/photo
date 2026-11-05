@@ -1,0 +1,338 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f3f6f5;
+  color: #20312b;
+  font-family: -apple-system, BlinkMacSystemFont,
+    "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+header {
+  background: #173b35;
+  color: white;
+  padding: 22px 18px;
+}
+
+header h1 {
+  font-size: 22px;
+  margin: 0 0 5px;
+}
+
+header p {
+  margin: 0;
+  color: #d9e8e2;
+  font-size: 13px;
+}
+
+nav {
+  display: flex;
+  gap: 7px;
+  overflow: auto;
+  background: #fff;
+  padding: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  border-bottom: 1px solid #dce5e1;
+}
+
+button {
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 14px;
+  background: #e8efec;
+  color: #244b40;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+nav button.active,
+.primary {
+  background: #173b35;
+  color: white;
+}
+
+.danger {
+  background: #ffebea;
+  color: #a32e27;
+}
+
+main {
+  max-width: 1000px;
+  margin: 18px auto;
+  padding: 0 13px 40px;
+}
+
+.box {
+  background: white;
+  border: 1px solid #dce5e1;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 0 0 14px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.stats article {
+  background: #fff;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #dce5e1;
+}
+
+.stats small {
+  display: block;
+  color: #6b7b75;
+}
+
+.stats strong {
+  display: block;
+  font-size: 19px;
+  color: #173b35;
+  margin-top: 5px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.formgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.formgrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #53645d;
+  font-weight: 700;
+}
+
+.formgrid .wide {
+  grid-column: 1 / -1;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #cbd8d2;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #fff;
+  color: #20312b;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.muted {
+  font-size: 13px;
+  color: #6b7b75;
+  line-height: 1.6;
+}
+
+.warning {
+  background: #fff2dc;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.hide {
+  display: none !important;
+}
+
+.preview {
+  max-width: 100%;
+  max-height: 230px;
+  display: block;
+  margin-top: 10px;
+  border-radius: 9px;
+}
+
+.total {
+  text-align: right;
+  padding: 13px 0;
+  font-size: 14px;
+}
+
+.total strong {
+  color: #173b35;
+  font-size: 19px;
+  margin-left: 8px;
+}
+
+.tablewrap {
+  overflow: auto;
+  margin-top: 12px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+th,
+td {
+  padding: 9px 7px;
+  text-align: left;
+  border-bottom: 1px solid #e1e8e4;
+  white-space: nowrap;
+}
+
+th {
+  background: #f1f6f3;
+  color: #52645b;
+}
+
+.record {
+  border-bottom: 1px solid #e1e8e4;
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.record small {
+  color: #6b7b75;
+  display: block;
+  margin-top: 4px;
+}
+
+#printArea {
+  display: none;
+}
+
+footer {
+  text-align: center;
+  color: #75847e;
+  font-size: 12px;
+  padding: 12px;
+}
+
+@media(max-width:600px) {
+  header h1 {
+    font-size: 19px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formgrid .wide {
+    grid-column: auto;
+  }
+
+  .box {
+    padding: 13px;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  header,
+  nav,
+  main,
+  footer {
+    display: none !important;
+  }
+
+  #printArea {
+    display: block !important;
+    color: #111;
+    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  .print-page {
+    page-break-after: always;
+    padding: 8mm 10mm;
+    min-height: 270mm;
+  }
+
+  .print-page:last-child {
+    page-break-after: auto;
+  }
+
+  .print-title {
+    text-align: center;
+    font-size: 23px;
+    letter-spacing: 8px;
+    font-weight: bold;
+    margin: 8px 0 20px;
+  }
+
+  .print-meta {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+  }
+
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #333;
+    padding: 9px 7px;
+    white-space: normal;
+  }
+
+  .print-sign {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 48px;
+  }
+
+  .receipt-img {
+    max-width: 100%;
+    max-height: 240mm;
+    object-fit: contain;
+    display: block;
+    margin: 10px auto;
+    page-break-inside: avoid;
+  }
+
+  .print-note {
+    margin-top: 20px;
+    border: 1px solid #555;
+    min-height: 55px;
+    padding: 8px;
+  }
+}
