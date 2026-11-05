@@ -40,8 +40,8 @@
         }
         .photo-canvas {
             width: 100% !important;
-            height: 85px !important;
-            max-height: 85px !important;
+            height: 110px !important;
+            max-height: 110px !important;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -57,7 +57,7 @@
         <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div>
                 <span class="font-bold text-blue-800 text-xs block">💡 批次上傳多張照片：</span>
-                <span class="text-xs text-blue-600">一次選取多張照片（例如 6 張），會自動每 3 張一頁分配，且每頁表頭可獨立修改！</span>
+                <span class="text-xs text-blue-600">工程名稱與廠商打一次自動同步，施作項目與照片每頁獨立！</span>
             </div>
             <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
                 選擇多張照片
@@ -76,11 +76,13 @@
 
     <script>
         const todayStr = new Date().toISOString().split('T')[0];
-        let pageDataList = [];
+        let globalProject = '';
+        let globalVendor = '';
+        let pagesData = [];
 
-        // 初始化預設第 0 頁
-        pageDataList.push({
-            project: '', vendor: '', item: '',
+        // 初始化預設 1 頁
+        pagesData.push({
+            item: '',
             dateBefore: todayStr, imgBefore: null,
             dateDuring: todayStr, imgDuring: null,
             dateAfter: todayStr, imgAfter: null
@@ -90,7 +92,7 @@
             const container = document.getElementById('print-area');
             container.innerHTML = '';
 
-            pageDataList.forEach((data, pIdx) => {
+            pagesData.forEach((data, pIdx) => {
                 const div = document.createElement('div');
                 div.className = 'page-container shadow-lg rounded-xl';
                 div.innerHTML = `
@@ -106,19 +108,19 @@
                                 <tr>
                                     <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 w-[22%] text-center">工程名稱</td>
                                     <td class="border-b border-gray-400 p-1.5">
-                                        <input type="text" value="${data.project}" placeholder="請輸入工程名稱" class="w-full outline-none bg-transparent" oninput="pageDataList[${pIdx}].project = this.value">
+                                        <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none bg-transparent" oninput="syncGlobalProject(this.value)">
                                     </td>
                                 </tr>
                                 <tr>
                                     <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
                                     <td class="border-b border-gray-400 p-1.5">
-                                        <input type="text" value="${data.vendor}" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent" oninput="pageDataList[${pIdx}].vendor = this.value">
+                                        <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent" oninput="syncGlobalVendor(this.value)">
                                     </td>
                                 </tr>
                                 <tr>
                                     <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
                                     <td class="border-b border-gray-400 p-1.5">
-                                        <input type="text" value="${data.item}" placeholder="請輸入施作項目" class="w-full outline-none bg-transparent" oninput="pageDataList[${pIdx}].item = this.value">
+                                        <input type="text" value="${data.item}" placeholder="請輸入施作項目 (本頁獨立)" class="w-full outline-none bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
                                     </td>
                                 </tr>
                             </tbody>
@@ -141,7 +143,7 @@
                                     <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
                                         <div class="flex items-center gap-1 no-print">
                                             <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                            <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pageDataList[${pIdx}].dateBefore = this.value; drawCanvas(${pIdx}, 'Before');">
+                                            <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateBefore = this.value; drawCanvas(${pIdx}, 'Before');">
                                         </div>
                                         <div class="no-print">
                                             <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
@@ -159,7 +161,7 @@
                                     <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
                                         <div class="flex items-center gap-1 no-print">
                                             <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                            <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pageDataList[${pIdx}].dateDuring = this.value; drawCanvas(${pIdx}, 'During');">
+                                            <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateDuring = this.value; drawCanvas(${pIdx}, 'During');">
                                         </div>
                                         <div class="no-print">
                                             <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'During')">
@@ -177,7 +179,7 @@
                                     <td class="p-1.5 space-y-1 align-middle">
                                         <div class="flex items-center gap-1 no-print">
                                             <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                            <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pageDataList[${pIdx}].dateAfter = this.value; drawCanvas(${pIdx}, 'After');">
+                                            <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateAfter = this.value; drawCanvas(${pIdx}, 'After');">
                                         </div>
                                         <div class="no-print">
                                             <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'After')">
@@ -193,11 +195,20 @@
                 `;
                 container.appendChild(div);
 
-                // 重新繪製已上傳的圖片
                 if (data.imgBefore) drawCanvas(pIdx, 'Before', false);
                 if (data.imgDuring) drawCanvas(pIdx, 'During', false);
                 if (data.imgAfter) drawCanvas(pIdx, 'After', false);
             });
+        }
+
+        function syncGlobalProject(val) {
+            globalProject = val;
+            document.querySelectorAll('input[placeholder="請輸入工程名稱"]').forEach(input => input.value = val);
+        }
+
+        function syncGlobalVendor(val) {
+            globalVendor = val;
+            document.querySelectorAll('input[placeholder="請輸入承攬廠商"]').forEach(input => input.value = val);
         }
 
         function handleBatchImages(event) {
@@ -206,17 +217,16 @@
 
             const totalPages = Math.ceil(files.length / 3);
             
-            // 擴充頁面陣列
-            while (pageDataList.length < totalPages) {
-                // 繼承第一頁的工程名稱、廠商，但施作項目可獨立
-                const base = pageDataList[0];
-                pageDataList.push({
-                    project: base.project, vendor: base.vendor, item: '',
+            // 確保頁面數量剛好等於圖片所需的頁數，絕不產生多餘空白頁
+            while (pagesData.length < totalPages) {
+                pagesData.push({
+                    item: '',
                     dateBefore: todayStr, imgBefore: null,
                     dateDuring: todayStr, imgDuring: null,
                     dateAfter: todayStr, imgAfter: null
                 });
             }
+            pagesData = pagesData.slice(0, totalPages);
 
             let fileIdx = 0;
             const stages = ['Before', 'During', 'After'];
@@ -232,7 +242,7 @@
                             return function(e) {
                                 const img = new Image();
                                 img.onload = function() {
-                                    pageDataList[pIdx]['img' + stg] = img;
+                                    pagesData[pIdx]['img' + stg] = img;
                                     drawCanvas(pIdx, stg);
                                 };
                                 img.src = e.target.result;
@@ -252,7 +262,7 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    pageDataList[pIdx]['img' + type] = img;
+                    pagesData[pIdx]['img' + type] = img;
                     drawCanvas(pIdx, type);
                 };
                 img.src = e.target.result;
@@ -260,8 +270,8 @@
             reader.readAsDataURL(file);
         }
 
-        function drawCanvas(pIdx, type, reload=true) {
-            const data = pageDataList[pIdx];
+        function drawCanvas(pIdx, type) {
+            const data = pagesData[pIdx];
             const img = data['img' + type];
             if (!img) return;
 
@@ -292,7 +302,6 @@
             canvas.classList.remove('hidden');
         }
 
-        // 初始化第一次渲染
         renderAllPages();
     </script>
 
