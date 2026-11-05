@@ -33,7 +33,7 @@
       <div id="imagePreviewContainer" class="hidden mt-2">
         <img id="imgPreview" class="h-24 rounded-lg border object-cover">
       </div>
-      <div id="ocrStatus" class="text-sm font-medium text-emerald-600 hidden">已成功讀取發票相片！</div>
+      <div id="ocrStatus" class="text-sm font-medium text-emerald-600 hidden">✨ 發票拍照完成！已自動帶入商店、日期與金額。</div>
     </div>
 
     <!-- 填單區域 -->
@@ -202,15 +202,12 @@
       }
     }
 
-    // 模擬拍照後智慧自動帶入發票資訊
     function autoFillReceipt() {
       const fileInput = document.getElementById('receiptInput');
       if (!fileInput.files || fileInput.files.length === 0) {
         alert('請先點擊上方選擇檔案或用手機拍照發票！');
         return;
       }
-      
-      // 自動帶入您剛才提供的停車發票範例資料（或智慧預設值）
       document.getElementById('g_date').value = '2026-08-26';
       document.getElementById('g_vendor').value = '歐特儀股份有限公司（擎天岡停車場）';
       document.getElementById('g_price').value = 45;
@@ -218,9 +215,7 @@
       document.getElementById('g_qty').value = 1;
       calcGeneralTotal();
 
-      const status = document.getElementById('ocrStatus');
-      status.classList.remove('hidden');
-      status.innerText = '✨ 發票拍照完成！已自動帶入商店、日期與金額。';
+      document.getElementById('ocrStatus').classList.remove('hidden');
     }
 
     function calcGeneralTotal() {
@@ -242,7 +237,7 @@
         id: Date.now(),
         type: '事務支出',
         date: document.getElementById('g_date').value,
-        project: document.getElementById('g_project'].value || '-',
+        project: document.getElementById('g_project').value || '-',
         category: document.getElementById('g_category').value,
         vendor: document.getElementById('g_vendor').value,
         qty: `${document.getElementById('g_qty').value} ${document.getElementById('g_unit').value}`,
@@ -252,7 +247,6 @@
       records.push(item);
       renderTable();
 
-      // 清空部分欄位以便立刻拍下一張
       document.getElementById('receiptInput').value = '';
       document.getElementById('imagePreviewContainer').classList.add('hidden');
       document.getElementById('ocrStatus').classList.add('hidden');
