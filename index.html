@@ -49,6 +49,10 @@
             color: #909399;
             font-size: 12px;
         }
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
         .btn-blue-outline {
             background: transparent;
             border: 1px solid #409eff;
@@ -60,6 +64,15 @@
         }
         .btn-blue-outline:hover {
             background: #ecf5ff;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
         }
         .btn-submit {
             background-color: #409eff;
@@ -126,15 +139,13 @@
             border: none;
             outline: none;
             font-size: 14px;
-            color: #606266;
-        }
-        .input-cell input[type="text"]::placeholder {
-            color: #c0c4cc;
+            color: #000;
+            background: transparent;
         }
 
         /* 照片區塊 */
         .photo-row {
-            height: 75mm; /* 固定高度以適應 A4 三格排版 */
+            height: 75mm;
         }
         .stage-cell {
             font-size: 18px;
@@ -150,6 +161,7 @@
             padding: 10px;
             text-align: right;
             vertical-align: top;
+            height: 100%;
         }
         .date-picker-wrapper {
             display: inline-flex;
@@ -157,7 +169,9 @@
             gap: 5px;
             font-size: 13px;
             color: #606266;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 10;
         }
         .date-picker-wrapper input[type="date"] {
             border: 1px solid #dcdfe6;
@@ -166,18 +180,40 @@
             color: #606266;
             outline: none;
         }
-        .image-placeholder {
+        
+        /* 圖片容器與預覽 */
+        .photo-container {
             position: absolute;
-            right: 20px;
-            bottom: 20px;
+            top: 40px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px dashed #c0c4cc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            cursor: pointer;
+            background-color: #fff;
+        }
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 確保步道相片按比例縮放，不變形 */
+        }
+        .image-placeholder {
             font-size: 13px;
             color: #909399;
             writing-mode: vertical-lr;
             letter-spacing: 2px;
-            cursor: pointer;
             line-height: 1.5;
+            text-align: center;
+            pointer-events: none;
         }
-        .image-placeholder:hover {
+        .photo-container:hover {
+            border-color: #409eff;
+        }
+        .photo-container:hover .image-placeholder {
             color: #409eff;
         }
 
@@ -188,7 +224,7 @@
                 padding: 0;
             }
             .toolbar {
-                display: none; /* 轉存或列印時隱藏工具列 */
+                display: none;
             }
             .a4-page {
                 box-shadow: none;
@@ -196,6 +232,9 @@
                 height: 297mm;
                 padding: 20mm 15mm;
                 page-break-after: always;
+            }
+            .photo-container {
+                border: none;
             }
         }
     </style>
@@ -207,9 +246,12 @@
         <div class="upload-section">
             <div class="upload-tips">
                 <div><span>★</span>批次上傳照片：</div>
-                <p>選取多張照片，自動每 3 張分配一頁 A4！</p>
+                <p>選取多張照片，自動依序分配進施工前、中、後！</p>
             </div>
-            <button class="btn-blue-outline">選擇多張照片</button>
+            <div class="file-input-wrapper">
+                <button class="btn-blue-outline">選擇多張照片</button>
+                <input type="file" id="batchUpload" multiple accept="image/*" onchange="handleBatchUpload(this)">
+            </div>
         </div>
         <button class="btn-submit" onclick="window.print()">
             🖨️ 點我列印 / 存成 PDF 檔案
@@ -226,15 +268,15 @@
             <!-- 基本資料欄 -->
             <tr>
                 <td class="label-cell">工程名稱</td>
-                <td class="input-cell"><input type="text" placeholder="請輸入工程名稱"></td>
+                <td class="input-cell"><input type="text" value="新北市客家文化園區景觀設施及特色遊具工"></td>
             </tr>
             <tr>
                 <td class="label-cell">承攬廠商</td>
-                <td class="input-cell"><input type="text" placeholder="請輸入承攬廠商"></td>
+                <td class="input-cell"><input type="text" value="嘉大興營造股份有限公司"></td>
             </tr>
             <tr>
                 <td class="label-cell">施作項目</td>
-                <td class="input-cell"><input type="text" placeholder="請輸入本頁施作項目"></td>
+                <td class="input-cell"><input type="text" value="施工圖錄"></td>
             </tr>
             
             <!-- 施工前 -->
@@ -245,7 +287,11 @@
                         <label>拍攝日期：</label>
                         <input type="date" value="2026-11-05">
                     </div>
-                    <div class="image-placeholder">點擊框內上傳照片</div>
+                    <!-- 隱藏的 Input 移到外側防止結構被覆蓋 -->
+                    <input type="file" id="imgInput1" accept="image/*" style="display:none;" onchange="previewSingle(this, 'preview1')">
+                    <div class="photo-container" onclick="triggerSingleUpload('imgInput1')">
+                        <div id="preview1" class="image-placeholder">點擊框內<br>上傳照片</div>
+                    </div>
                 </td>
             </tr>
             
@@ -257,7 +303,10 @@
                         <label>拍攝日期：</label>
                         <input type="date" value="2026-11-05">
                     </div>
-                    <div class="image-placeholder">點擊框內上傳照片</div>
+                    <input type="file" id="imgInput2" accept="image/*" style="display:none;" onchange="previewSingle(this, 'preview2')">
+                    <div class="photo-container" onclick="triggerSingleUpload('imgInput2')">
+                        <div id="preview2" class="image-placeholder">點擊框內<br>上傳照片</div>
+                    </div>
                 </td>
             </tr>
             
@@ -269,11 +318,9 @@
                         <label>拍攝日期：</label>
                         <input type="date" value="2026-11-05">
                     </div>
-                    <div class="image-placeholder">點擊框內上傳照片</div>
+                    <input type="file" id="imgInput3" accept="image/*" style="display:none;" onchange="previewSingle(this, 'preview3')">
+                    <div class="photo-container" onclick="triggerSingleUpload('imgInput3')">
+                        <div id="preview3" class="image-placeholder">點擊框內<br>上傳照片</div>
+                    </div>
                 </td>
             </tr>
-        </table>
-    </div>
-
-</body>
-</html>
