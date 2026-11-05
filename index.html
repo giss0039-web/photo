@@ -37,7 +37,7 @@
             flex-direction: column;
             justify-content: space-between;
         }
-        /* 移除照片外框與陰影，呈現乾淨畫面 */
+        /* 讓照片自動放大並完美填滿格子，徹底消除下方留白 */
         .photo-canvas {
             width: 100% !important;
             height: 135px !important;
@@ -46,8 +46,6 @@
             display: block;
             margin: 0 auto;
             background: #ffffff;
-            border: none !important;
-            box-shadow: none !important;
         }
     </style>
 </head>
@@ -115,4 +113,63 @@
                                 <tr>
                                     <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
                                     <td class="border-b border-gray-400 p-1.5">
-                                        <input
+                                        <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent" oninput="syncGlobalVendor(this.value)">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
+                                    <td class="border-b border-gray-400 p-1.5">
+                                        <input type="text" value="${data.item}" placeholder="請輸入施作項目 (本頁獨立)" class="w-full outline-none bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- 照片與階段表格 (全面填滿 A4 剩餘高度) -->
+                        <table class="w-full border-collapse text-xs flex-grow" style="table-layout: fixed; height: 100%;">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-700">
+                                    <th class="border-r border-t border-b border-gray-400 p-1.5 w-[22%] text-center">階段 / 說明</th>
+                                    <th class="border-t border-b border-gray-400 p-1.5 w-[78%] text-center">照片與施工日期</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 施工前 -->
+                                <tr style="height: 33.3%;">
+                                    <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-blue-600 text-sm">
+                                        施<br>工<br>前
+                                    </td>
+                                    <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
+                                        <div class="flex items-center gap-1 no-print">
+                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
+                                            <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateBefore = this.value; drawCanvas(${pIdx}, 'Before');">
+                                        </div>
+                                        <div class="no-print">
+                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
+                                        </div>
+                                        <div class="text-center">
+                                            <canvas id="canvas_${pIdx}_Before" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgBefore ? '' : 'hidden'}"></canvas>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 施工中 -->
+                                <tr style="height: 33.3%;">
+                                    <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-yellow-600 text-sm">
+                                        施<br>工<br>中
+                                    </td>
+                                    <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
+                                        <div class="flex items-center gap-1 no-print">
+                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
+                                            <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateDuring = this.value; drawCanvas(${pIdx}, 'During');">
+                                        </div>
+                                        <div class="no-print">
+                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'During')">
+                                        </div>
+                                        <div class="text-center">
+                                            <canvas id="canvas_${pIdx}_During" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgDuring ? '' : 'hidden'}"></canvas>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- 施工後 -->
+                                <tr style="height: 33.3%;">
+                                    <td class="border-r border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-green-600 text-sm">
