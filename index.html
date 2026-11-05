@@ -138,4 +138,184 @@
                         <!-- 工程名稱 -->
                         <tr style="height: 36px;">
                             <td class="w-[20%] font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">工程名稱</td>
-                            <td class="w-
+                            <td class="w-[80%] text-left px-2">
+                                <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalProject(this.value)">
+                            </td>
+                        </tr>
+                        <!-- 承攬廠商 -->
+                        <tr style="height: 36px;">
+                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">承攬廠商</td>
+                            <td class="text-left px-2">
+                                <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalVendor(this.value)">
+                            </td>
+                        </tr>
+                        <!-- 施作項目 (本頁獨立) -->
+                        <tr style="height: 36px;">
+                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">施作項目</td>
+                            <td class="text-left px-2">
+                                <input type="text" value="${data.item}" placeholder="請輸入施作項目" class="w-full outline-none text-sm font-serif bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
+                            </td>
+                        </tr>
+                        <!-- 施工前 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工前</div>
+                            </td>
+                            <td>
+                                <div class="photo-box" onclick="triggerFileInput(${pIdx}, 'Before')">
+                                    <input type="file" id="file_${pIdx}_Before" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
+                                    <canvas id="canvas_${pIdx}_Before" class="photo-canvas ${data.imgBefore ? '' : 'hidden'}"></canvas>
+                                    ${!data.imgBefore ? '<span class="text-xs text-gray-400 no-print">點擊上傳【施工前】照片</span>' : ''}
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工中 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工中</div>
+                            </td>
+                            <td>
+                                <div class="photo-box" onclick="triggerFileInput(${pIdx}, 'During')">
+                                    <input type="file" id="file_${pIdx}_During" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'During')">
+                                    <canvas id="canvas_${pIdx}_During" class="photo-canvas ${data.imgDuring ? '' : 'hidden'}"></canvas>
+                                    ${!data.imgDuring ? '<span class="text-xs text-gray-400 no-print">點擊上傳【施工中】照片</span>' : ''}
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工後 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工後</div>
+                            </td>
+                            <td>
+                                <div class="photo-box" onclick="triggerFileInput(${pIdx}, 'After')">
+                                    <input type="file" id="file_${pIdx}_After" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'After')">
+                                    <canvas id="canvas_${pIdx}_After" class="photo-canvas ${data.imgAfter ? '' : 'hidden'}"></canvas>
+                                    ${!data.imgAfter ? '<span class="text-xs text-gray-400 no-print">點擊上傳【施工後】照片</span>' : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                `;
+                container.appendChild(div);
+
+                if (data.imgBefore) drawCanvas(pIdx, 'Before');
+                if (data.imgDuring) drawCanvas(pIdx, 'During');
+                if (data.imgAfter) drawCanvas(pIdx, 'After');
+            });
+        }
+
+        function triggerFileInput(pIdx, type) {
+            document.getElementById(`file_${pIdx}_${type}`).click();
+        }
+
+        function syncGlobalProject(val) {
+            globalProject = val;
+            document.querySelectorAll('input[placeholder="請輸入工程名稱"]').forEach(input => input.value = val);
+        }
+
+        function syncGlobalVendor(val) {
+            globalVendor = val;
+            document.querySelectorAll('input[placeholder="請輸入承攬廠商"]').forEach(input => input.value = val);
+        }
+
+        function handleBatchImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const totalPages = Math.ceil(files.length / 3);
+            
+            while (pagesData.length < totalPages) {
+                pagesData.push({
+                    item: pagesData[0].item || '',
+                    dateBefore: todayStr, imgBefore: null,
+                    dateDuring: todayStr, imgDuring: null,
+                    dateAfter: todayStr, imgAfter: null
+                });
+            }
+            pagesData = pagesData.slice(0, totalPages);
+
+            let fileIdx = 0;
+            const stages = ['Before', 'During', 'After'];
+
+            for (let p = 0; p < totalPages; p++) {
+                for (let s = 0; s < 3; s++) {
+                    if (fileIdx < files.length) {
+                        const file = files[fileIdx++];
+                        const stage = stages[s];
+                        const reader = new FileReader();
+                        
+                        reader.onload = (function(pIdx, stg) {
+                            return function(e) {
+                                const img = new Image();
+                                img.onload = function() {
+                                    pagesData[pIdx]['img' + stg] = img;
+                                    drawCanvas(pIdx, stg);
+                                };
+                                img.src = e.target.result;
+                            };
+                        })(p, stage);
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+            renderAllPages();
+        }
+
+        function handleImageUpload(event, pIdx, type) {
+            event.stopPropagation();
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    pagesData[pIdx]['img' + type] = img;
+                    drawCanvas(pIdx, type);
+                    renderAllPages();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function drawCanvas(pIdx, type) {
+            const data = pagesData[pIdx];
+            const img = data['img' + type];
+            if (!img) return;
+
+            const canvas = document.getElementById(`canvas_${pIdx}_${type}`);
+            if (!canvas) return;
+
+            const dateVal = data['date' + type] || todayStr;
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            // 在照片右下角加上壓印日期 (格式: YYYY.MM.DD)
+            if (dateVal) {
+                const formattedDate = dateVal.replace(/-/g, '.');
+                const fontSize = Math.max(canvas.width * 0.038, 18);
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                ctx.fillStyle = '#FFC000'; // 黃色壓印字體
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 4;
+                ctx.lineWidth = 2;
+
+                const metrics = ctx.measureText(formattedDate);
+                const x = canvas.width - metrics.width - 20;
+                const y = canvas.height - 20;
+
+                ctx.strokeText(formattedDate, x, y);
+                ctx.fillText(formattedDate, x, y);
+            }
+            canvas.classList.remove('hidden');
+        }
+
+        // 初始化第一頁畫面
+        renderAllPages();
+    </script>
+
+</body>
+</html>
