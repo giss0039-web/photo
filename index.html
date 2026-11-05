@@ -19,30 +19,27 @@
                 box-shadow: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                page-break-after: always;
-                break-after: page;
                 height: 285mm !important;
+                page-break-after: avoid;
+                break-after: avoid;
             }
         }
         .page-container {
-            page-break-after: always;
-            break-after: page;
             box-sizing: border-box;
             width: 100%;
             max-width: 210mm;
             height: 285mm;
-            margin: 0 auto 5px auto;
+            margin: 0 auto;
             background: white;
             padding: 8mm;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
-        /* 嚴格控制照片在表格內的高度，確保 3 張絕對穩穩在同一頁 */
         .photo-canvas {
             width: 100% !important;
-            height: 95px !important;
-            max-height: 95px !important;
+            height: 90px !important;
+            max-height: 90px !important;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -54,17 +51,7 @@
 
     <!-- 全域控制列 (不印出) -->
     <div class="max-w-2xl mx-auto mb-3 p-3 bg-white shadow rounded-xl no-print space-y-2">
-        <h1 class="text-base font-bold text-center text-gray-800">施工照片批次產生器</h1>
-        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <div>
-                <span class="font-bold text-blue-800 text-xs block">💡 批次上傳多張照片：</span>
-                <span class="text-xs text-blue-600">一次選取多張照片，系統會自動每 3 張一頁分配到 A4！</span>
-            </div>
-            <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-xs cursor-pointer shadow whitespace-nowrap">
-                選擇多張照片
-                <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleMultiImages(event)">
-            </label>
-        </div>
+        <h1 class="text-base font-bold text-center text-gray-800">施工照片產生器</h1>
         <div class="flex justify-center gap-2">
             <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 text-sm transition">
                 🖨️ 點我列印 / 存成 PDF 檔案
@@ -72,10 +59,9 @@
         </div>
     </div>
 
-    <!-- 輸出列印區域 -->
+    <!-- 輸出列印區域 (保證永遠只有 1 頁) -->
     <div id="print-area">
-        <!-- 預設第 0 頁 -->
-        <div class="page-container shadow-lg rounded-xl" data-page-index="0">
+        <div class="page-container shadow-lg rounded-xl">
             <div class="border border-gray-400 rounded overflow-hidden w-full bg-white">
                 <!-- 表頭區域 -->
                 <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
@@ -88,19 +74,19 @@
                         <tr>
                             <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 w-[22%] text-center">工程名稱</td>
                             <td class="border-b border-gray-400 p-1.5">
-                                <input type="text" placeholder="請輸入工程名稱" class="project-name-input w-full outline-none bg-transparent" oninput="syncProject(this.value)">
+                                <input type="text" placeholder="請輸入工程名稱" class="w-full outline-none bg-transparent">
                             </td>
                         </tr>
                         <tr>
                             <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
                             <td class="border-b border-gray-400 p-1.5">
-                                <input type="text" placeholder="請輸入承攬廠商" class="project-vendor-input w-full outline-none bg-transparent" oninput="syncVendor(this.value)">
+                                <input type="text" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent">
                             </td>
                         </tr>
                         <tr>
                             <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
                             <td class="border-b border-gray-400 p-1.5">
-                                <input type="text" placeholder="請輸入施作項目" class="project-item-input w-full outline-none bg-transparent" oninput="syncItem(this.value)">
+                                <input type="text" placeholder="請輸入施作項目" class="w-full outline-none bg-transparent">
                             </td>
                         </tr>
                     </tbody>
@@ -123,13 +109,13 @@
                             <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1 no-print">
                                     <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                    <input type="date" id="date_0_Before" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="updateDate(0, 'Before', this.value)">
+                                    <input type="date" id="date_Before" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
                                 </div>
                                 <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 0, 'Before')">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'Before')">
                                 </div>
                                 <div class="text-center">
-                                    <canvas id="canvas_0_Before" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                    <canvas id="canvas_Before" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
                                 </div>
                             </td>
                         </tr>
@@ -141,13 +127,13 @@
                             <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1 no-print">
                                     <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                    <input type="date" id="date_0_During" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="updateDate(0, 'During', this.value)">
+                                    <input type="date" id="date_During" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
                                 </div>
                                 <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 0, 'During')">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'During')">
                                 </div>
                                 <div class="text-center">
-                                    <canvas id="canvas_0_During" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                    <canvas id="canvas_During" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
                                 </div>
                             </td>
                         </tr>
@@ -159,13 +145,13 @@
                             <td class="p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1 no-print">
                                     <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                    <input type="date" id="date_0_After" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="updateDate(0, 'After', this.value)">
+                                    <input type="date" id="date_After" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
                                 </div>
                                 <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 0, 'After')">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'After')">
                                 </div>
                                 <div class="text-center">
-                                    <canvas id="canvas_0_After" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
+                                    <canvas id="canvas_After" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
                                 </div>
                             </td>
                         </tr>
@@ -176,254 +162,48 @@
     </div>
 
     <script>
-        const formData = {};
         const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('date_Before').value = todayStr;
+        document.getElementById('date_During').value = todayStr;
+        document.getElementById('date_After').value = todayStr;
 
-        formData[0] = {
-            project: '', vendor: '', item: '',
-            dateBefore: todayStr, imgBefore: null,
-            dateDuring: todayStr, imgDuring: null,
-            dateAfter: todayStr, imgAfter: null
-        };
-        document.getElementById('date_0_Before').value = todayStr;
-        document.getElementById('date_0_During').value = todayStr;
-        document.getElementById('date_0_After').value = todayStr;
-
-        function getPageData(pageIndex) {
-            if (!formData[pageIndex]) {
-                formData[pageIndex] = {
-                    project: formData[0] ? formData[0].project : '',
-                    vendor: formData[0] ? formData[0].vendor : '',
-                    item: formData[0] ? formData[0].item : '',
-                    dateBefore: todayStr, imgBefore: null,
-                    dateDuring: todayStr, imgDuring: null,
-                    dateAfter: todayStr, imgAfter: null
-                };
-            }
-            return formData[pageIndex];
-        }
-
-        function syncProject(val) {
-            document.querySelectorAll('.project-name-input').forEach((input, idx) => {
-                input.value = val;
-                getPageData(idx).project = val;
-            });
-        }
-
-        function syncVendor(val) {
-            document.querySelectorAll('.project-vendor-input').forEach((input, idx) => {
-                input.value = val;
-                getPageData(idx).vendor = val;
-            });
-        }
-
-        function syncItem(val) {
-            document.querySelectorAll('.project-item-input').forEach((input, idx) => {
-                input.value = val;
-                getPageData(idx).item = val;
-            });
-        }
-
-        function updateDate(pageIndex, type, val) {
-            const data = getPageData(pageIndex);
-            data['date' + type] = val;
-            renderCanvas(pageIndex, type);
-        }
-
-        function createNewPage(pageIndex) {
-            const container = document.getElementById('print-area');
-            const globalProj = getPageData(0).project;
-            const globalVend = getPageData(0).vendor;
-            const globalItem = getPageData(0).item;
-            
-            const pData = getPageData(pageIndex);
-            pData.project = globalProj;
-            pData.vendor = globalVend;
-            pData.item = globalItem;
-
-            const div = document.createElement('div');
-            div.className = 'page-container shadow-lg rounded-xl';
-            div.setAttribute('data-page-index', pageIndex);
-            div.innerHTML = `
-                <div class="border border-gray-400 rounded overflow-hidden w-full bg-white">
-                    <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
-                        <thead>
-                            <tr>
-                                <th colspan="2" class="border-b border-gray-400 p-2 text-center text-sm font-bold bg-gray-50 tracking-widest">施 工 照 片</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 w-[22%] text-center">工程名稱</td>
-                                <td class="border-b border-gray-400 p-1.5">
-                                    <input type="text" value="${globalProj}" placeholder="請輸入工程名稱" class="project-name-input w-full outline-none bg-transparent" oninput="syncProject(this.value)">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
-                                <td class="border-b border-gray-400 p-1.5">
-                                    <input type="text" value="${globalVend}" placeholder="請輸入承攬廠商" class="project-vendor-input w-full outline-none bg-transparent" oninput="syncVendor(this.value)">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
-                                <td class="border-b border-gray-400 p-1.5">
-                                    <input type="text" value="${globalItem}" placeholder="請輸入施作項目" class="project-item-input w-full outline-none bg-transparent" oninput="syncItem(this.value)">
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-700">
-                                <th class="border-r border-b border-gray-400 p-1.5 w-[22%] text-center">階段 / 說明</th>
-                                <th class="border-b border-gray-400 p-1.5 w-[78%] text-center">照片與施工日期</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-blue-600">
-                                    施<br>工<br>前
-                                </td>
-                                <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
-                                    <div class="flex items-center gap-1 no-print">
-                                        <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                        <input type="date" id="date_${pageIndex}_Before" value="${todayStr}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="updateDate(${pageIndex}, 'Before', this.value)">
-                                    </div>
-                                    <div class="no-print">
-                                        <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, ${pageIndex}, 'Before')">
-                                    </div>
-                                    <div class="text-center">
-                                        <canvas id="canvas_${pageIndex}_Before" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-yellow-600">
-                                    施<br>工<br>中
-                                </td>
-                                <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
-                                    <div class="flex items-center gap-1 no-print">
-                                        <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                        <input type="date" id="date_${pageIndex}_During" value="${todayStr}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="updateDate(${pageIndex}, 'During', this.value)">
-                                    </div>
-                                    <div class="no-print">
-                                        <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, ${pageIndex}, 'During')">
-                                    </div>
-                                    <div class="text-center">
-                                        <canvas id="canvas_${pageIndex}_During" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="border-r border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-green-600">
-                                    施<br>工<br>後
-                                </td>
-                                <td class="p-1.5 space-y-1 align-middle">
-                                    <div class="flex items-center gap-1 no-print">
-                                        <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                        <input type="date" id="date_${pageIndex}_After" value="${todayStr}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="updateDate(${pageIndex}, 'After', this.value)">
-                                    </div>
-                                    <div class="no-print">
-                                        <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, ${pageIndex}, 'After')">
-                                    </div>
-                                    <div class="text-center">
-                                        <canvas id="canvas_${pageIndex}_After" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        function handleMultiImages(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-
-            const stages = ['Before', 'During', 'After'];
-            const totalPages = Math.ceil(files.length / 3);
-
-            for (let p = 0; p < totalPages; p++) {
-                if (!document.querySelector(`[data-page-index="${p}"]`)) {
-                    createNewPage(p);
-                }
-            }
-
-            for (let i = 0; i < files.length; i++) {
-                const pageIndex = Math.floor(i / 3);
-                const stageIndex = i % 3;
-                const stage = stages[stageIndex];
-                const file = files[i];
-
-                const reader = new FileReader();
-                reader.onload = (function(pIdx, stg) {
-                    return function(e) {
-                        const img = new Image();
-                        img.onload = function() {
-                            const data = getPageData(pIdx);
-                            data['img' + stg] = img;
-                            renderCanvas(pIdx, stg);
-                        };
-                        img.src = e.target.result;
-                    };
-                })(pageIndex, stage);
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function handleSingleImage(event, pageIndex, type) {
+        function handleImage(event, type) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    const data = getPageData(pageIndex);
-                    data['img' + type] = img;
-                    renderCanvas(pageIndex, type);
+                    const canvas = document.getElementById(`canvas_${type}`);
+                    const dateInput = document.getElementById(`date_${type}`);
+                    const dateVal = dateInput ? dateInput.value : todayStr;
+
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    if (dateVal) {
+                        const fontSize = Math.max(canvas.width * 0.045, 20);
+                        ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.shadowColor = '#000000';
+                        ctx.shadowBlur = 6;
+                        ctx.lineWidth = 4;
+
+                        const metrics = ctx.measureText(dateVal);
+                        const x = canvas.width - metrics.width - 25;
+                        const y = canvas.height - 25;
+
+                        ctx.strokeText(dateVal, x, y);
+                        ctx.fillText(dateVal, x, y);
+                    }
+
+                    canvas.classList.remove('hidden');
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
-        }
-
-        function renderCanvas(pageIndex, type) {
-            const data = getPageData(pageIndex);
-            const img = data['img' + type];
-            if (!img) return;
-
-            const canvas = document.getElementById(`canvas_${pageIndex}_${type}`);
-            const dateInput = document.getElementById(`date_${pageIndex}_${type}`);
-            const dateVal = dateInput ? dateInput.value : todayStr;
-            data['date' + type] = dateVal;
-
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-
-            if (dateVal) {
-                const fontSize = Math.max(canvas.width * 0.045, 20);
-                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-                ctx.fillStyle = '#FFFFFF';
-                ctx.shadowColor = '#000000';
-                ctx.shadowBlur = 6;
-                ctx.lineWidth = 4;
-
-                const metrics = ctx.measureText(dateVal);
-                const x = canvas.width - metrics.width - 25;
-                const y = canvas.height - 25;
-
-                ctx.strokeText(dateVal, x, y);
-                ctx.fillText(dateVal, x, y);
-            }
-
-            canvas.classList.remove('hidden');
         }
     </script>
 
