@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事務支出與油資申請系統</title>
+    <!-- Tailwind CSS & HTML5 QR Scanner -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @page { size: A4 portrait; margin: 0; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            input, select, textarea { border: none !important; background: transparent !important; }
+            .page-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm 12mm !important;
+                height: 297mm !important;
+                page-break-after: always;
+            }
+        }
+        .page-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 15px auto;
+            background: white;
+            padding: 10mm 12mm;
+            box-sizing: border-box;
+        }
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            table-layout: fixed;
+        }
+        .excel-table th, .excel-table td {
+            border: 1px solid #000;
+            padding: 4px 2px;
+            text-align: center;
+            font-size: 13px;
+            font-family: "標楷體", "DFKai-SB", "Microsoft JhengHei", serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 py-3 px-2">
+
+    <!-- 手機操作介面 (列印不顯示) -->
+    <div class="max-w-xl mx-auto mb-4 p-3 bg-white shadow rounded-xl no-print space-y-3 border border-gray-200">
+        <h1 class="text-base font-bold text-center text-gray-800">📷 事務支出與油資請款系統</h1>
+        
+        <!-- 掃描發票按鈕區 -->
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+            <span class="font-bold text-blue-900 text-xs block">💡 電子發票自動辨識：</span>
+            <button onclick="startScanner()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded text-xs shadow flex items-center justify-center gap-1">
+                📷 開啟鏡頭掃描發票 QRCode
+            </button>
+            <div id="reader" class="w-full hidden rounded overflow-hidden border border-gray-300"></div>
+        </div>
+
+        <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg shadow hover:bg-blue-700 text-sm">
+            🖨️ 點我列印 / 存成 PDF 檔案
+        </button>
+    </div>
+
+    <!-- 輸出列印區域 -->
+    <div id="print-area">
+        
+        <!-- 第一頁：事務支出單 -->
+        <div class="page-container shadow-xl">
+            <div class="text-right text-xs font-mono font-bold mb-1">AC006</div>
+            <h2 class="text-center font-bold text-xl mb-3 tracking-[8px]" style="font-family: '標楷體', serif;">事 務 支 出 單</h2>
+            
+            <div class="flex justify-end mb-2 text-sm font-serif">
+                <span>填單日期：</span>
+                <input type="date" id="expenseDate" class="border-b border-black outline-none px-1 text-center font-serif">
+            </div>
+
+            <table class="excel-table">
+                <thead>
+                    <tr style="height: 32px; background: #f9f9f9;">
+                        <th style="width: 15%;">案件編號</th>
+                        <th style="width: 18%;">會計科目</th>
+                        <th style="width: 32%;">說 明</th>
+                        <th style="width: 10%;">數量</th>
+                        <th style="width: 8%;">單位</th>
+                        <th style="width: 12%;">支出單價</th>
+                        <th style="width: 15%;">支出總價</th>
+                    </tr>
+                </thead>
+                <tbody id="expenseRows">
+                    <!-- 汽車油資列 -->
+                    <tr>
+                        <td><input type="text" class="w-full text-center outline-none"></td>
+                        <td>燃料費</td>
+                        <td>汽車油資</td>
+                        <td><input type="number" id="fuelQty" value="0" class="w-full text-center outline-none" oninput="calcExpense()"></td>
+                        <td>公里</td>
+                        <td><input type="number" id="fuelPrice" value="5.9" step="0.1" class="w-full text-center outline-none" oninput="calcExpense()"></td>
+                        <td id="fuelTotal" class="font-bold">0</td>
+                    </tr>
+                    <!-- 過路費列 -->
+                    <tr>
+                        <td><input type="text" class="w-full text-center outline-none"></td>
+                        <td>交通費</td>
+                        <td>過路費</td>
+                        <td><input type="number" id="tollQty" value="0" class="w-full text-center outline-none" oninput="calcExpense()"></td>
+                        <td>公里</td>
+                        <td><input type="number" id="tollPrice" value="1.2" step="0.1" class="w-full text-center outline-none" oninput="calcExpense()"></td>
+                        <td id="tollTotal" class="font-bold">0</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" class="text-left px-2 py-1 no-print">
+                            <button onclick="addExpenseRow()" class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">+ 新增發票/支出項目</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" rowspan="3" class="text-left p-2 align-top">
+                            <div class="mb-2">付款方式：■現金 ■當次 □月結 票期：□即期 □其他___天</div>
+                            <div>簽收：</div>
+                            <div class="mt-4">備註：<span id="scanLog" class="text-xs text-gray-500"></span></div>
+                        </td>
+                        <td class="font-bold">小 計</td>
+                        <td id="subTotal" class="font-bold">0</td>
+                    </tr>
+                    <tr>
+                        <td class="font-bold">5% 稅金</td>
+                        <td id="taxTotal" class="font-bold">0</td>
+                    </tr>
+                    <tr>
+                        <td class="font-bold">總 計</td>
+                        <td id="grandTotal" class="font-bold">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="flex justify-between mt-8 text-sm font-serif px-4">
+                <span>財務主管：__________</span>
+                <span>會計：__________</span>
+                <span>申請人：__________</span>
+            </div>
+        </div>
+
+        <!-- 第二頁：油資申請單 -->
+        <div class="page-container shadow-xl">
+            <div class="text-right text-xs font-mono font-bold mb-1">AC013</div>
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xl font-bold tracking-[8px] mx-auto pl-12" style="font-family: '標楷體', serif;">油 資 申 請 單</h2>
+                <div class="text-xs font-serif">
+                    申請日期：<input type="text" value="115/11/03" class="w-20 border-b border-black text-center outline-none">
+                </div>
+            </div>
+
+            <table class="excel-table">
+                <thead>
+                    <tr style="height: 30px; background: #f9f9f9;">
+                        <th style="width: 12%;">日 期</th>
+                        <th style="width: 58%;">起 訖 說 明</th>
+                        <th style="width: 15%;">里程數 (km)</th>
+                        <th style="width: 15%;">高速公路里程</th>
+                    </tr>
+                </thead>
+                <tbody id="fuelRows">
+                    <!-- 自動補滿常用列 -->
+                </tbody>
+                <tfoot>
+                    <tr style="height: 32px; font-weight: bold;">
+                        <td colspan="2" class="text-right pr-4">里程數(km) / 高速公路里程數 合計</td>
+                        <td id="totalFuelKm">0</td>
+                        <td id="totalTollKm">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // 初始化油資明細表格 (產生 15 列)
+        const fuelTbody = document.getElementById('fuelRows');
+        for (let i = 0; i < 15; i++) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" class="w-full text-center outline-none" placeholder="MM/DD"></td>
+                <td>
+                    <div class="flex items-center justify-center gap-1">
+                        <input type="text" class="w-16 text-center outline-none" placeholder="地點A">
+                        <span>→</span>
+                        <input type="text" class="w-16 text-center outline-none" placeholder="地點B">
+                        <span>→</span>
+                        <input type="text" class="w-16 text-center outline-none" placeholder="地點C">
+                    </div>
+                </td>
+                <td><input type="number" class="fuel-km w-full text-center outline-none" oninput="calcFuelTotals()"></td>
+                <td><input type="number" class="toll-km w-full text-center outline-none" oninput="calcFuelTotals()"></td>
+            `;
+            fuelTbody.appendChild(tr);
+        }
+
+        // 計算油資單總里程數，並連動帶回事務支出單
+        function calcFuelTotals() {
+            let sumFuel = 0;
+            let sumToll = 0;
+            document.querySelectorAll('.fuel-km').forEach(input => {
+                sumFuel += parseFloat(input.value) || 0;
+            });
+            document.querySelectorAll('.toll-km').forEach(input => {
+                sumToll += parseFloat(input.value) || 0;
+            });
+
+            document.getElementById('totalFuelKm').innerText = sumFuel;
+            document.getElementById('totalTollKm').innerText = sumToll;
+
+            // 連動帶回支出單數量
+            document.getElementById('fuelQty').value = sumFuel;
+            document.getElementByI
