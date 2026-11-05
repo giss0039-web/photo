@@ -18,7 +18,7 @@
             .page-container {
                 box-shadow: none !important;
                 margin: 0 !important;
-                padding: 6mm !important;
+                padding: 12mm 15mm !important;
                 height: 297mm !important;
                 page-break-after: always;
                 break-after: page;
@@ -30,45 +30,77 @@
             box-sizing: border-box;
             width: 210mm;
             height: 297mm;
-            margin: 0 auto 5mm auto;
+            margin: 0 auto 10px auto;
             background: white;
-            padding: 6mm;
+            padding: 12mm 15mm;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
-        /* 讓照片自動放大並完美填滿格子，徹底消除下方留白 */
+        
+        /* 100% 擬真 Word/Excel 工程表格樣式 */
+        .report-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+            table-layout: fixed;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #000000;
+            padding: 0;
+            margin: 0;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .photo-box {
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            background: #ffffff;
+        }
+        
         .photo-canvas {
-            width: 100% !important;
-            height: 135px !important;
-            max-height: 135px !important;
+            max-width: 92%;
+            max-height: 220px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
-            background: #ffffff;
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            letter-spacing: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: "標楷體", "DFKai-SB", "Microsoft JhengHei", serif;
+            margin: 0 auto;
         }
     </style>
 </head>
-<body class="bg-gray-100 py-2 px-2">
+<body class="bg-gray-100 py-3 px-2">
 
     <!-- 全域控制列 (不印出) -->
-    <div class="max-w-2xl mx-auto mb-3 p-3 bg-white shadow rounded-xl no-print space-y-2">
-        <h1 class="text-base font-bold text-center text-gray-800">施工照片產生器</h1>
-        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+    <div class="max-w-xl mx-auto mb-4 p-3 bg-white shadow rounded-xl no-print space-y-2 border border-gray-200">
+        <h1 class="text-base font-bold text-center text-gray-800">施工照片報告產生器</h1>
+        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-2">
             <div>
-                <span class="font-bold text-blue-800 text-xs block">💡 批次上傳多張照片：</span>
-                <span class="text-xs text-blue-600">工程名稱與廠商打一次自動同步，施作項目與照片每頁獨立！</span>
+                <span class="font-bold text-blue-900 text-xs block">💡 批次上傳照片：</span>
+                <span class="text-xs text-blue-700">選擇多張照片，自動每 3 張分配一頁 A4！</span>
             </div>
             <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
                 選擇多張照片
                 <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
             </label>
         </div>
-        <div class="flex justify-center gap-2">
-            <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 text-sm transition">
-                🖨️ 點我列印 / 存成 PDF 檔案
-            </button>
-        </div>
+        <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg shadow hover:bg-blue-700 text-sm transition">
+            🖨️ 點我列印 / 存成 PDF 檔案
+        </button>
     </div>
 
     <!-- 輸出列印區域 -->
@@ -76,12 +108,13 @@
 
     <script>
         const todayStr = new Date().toISOString().split('T')[0];
-        let globalProject = '';
-        let globalVendor = '';
+        let globalProject = '新北市客家文化園區景觀設施及特色遊具工程';
+        let globalVendor = '嘉大興營造股份有限公司';
         let pagesData = [];
 
+        // 初始化第 1 頁
         pagesData.push({
-            item: '',
+            item: '既有景石移設',
             dateBefore: todayStr, imgBefore: null,
             dateDuring: todayStr, imgDuring: null,
             dateAfter: todayStr, imgAfter: null
@@ -93,83 +126,16 @@
 
             pagesData.forEach((data, pIdx) => {
                 const div = document.createElement('div');
-                div.className = 'page-container shadow-lg rounded-xl';
+                div.className = 'page-container shadow-xl rounded-sm';
                 div.innerHTML = `
-                    <div class="border border-gray-400 rounded overflow-hidden w-full h-full flex flex-col justify-between bg-white">
-                        <!-- 表頭區域 -->
-                        <table class="w-full border-collapse text-xs" style="table-layout: fixed;">
-                            <thead>
-                                <tr>
-                                    <th colspan="2" class="border-b border-gray-400 p-1.5 text-center text-sm font-bold bg-gray-50 tracking-widest">施 工 照 片 (第 ${pIdx + 1} 頁)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 w-[22%] text-center">工程名稱</td>
-                                    <td class="border-b border-gray-400 p-1.5">
-                                        <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none bg-transparent" oninput="syncGlobalProject(this.value)">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">承攬廠商</td>
-                                    <td class="border-b border-gray-400 p-1.5">
-                                        <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none bg-transparent" oninput="syncGlobalVendor(this.value)">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="border-r border-b border-gray-400 p-1.5 font-semibold bg-gray-50 text-center">施作項目</td>
-                                    <td class="border-b border-gray-400 p-1.5">
-                                        <input type="text" value="${data.item}" placeholder="請輸入施作項目 (本頁獨立)" class="w-full outline-none bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <!-- 照片與階段表格 (全面填滿 A4 剩餘高度) -->
-                        <table class="w-full border-collapse text-xs flex-grow" style="table-layout: fixed; height: 100%;">
-                            <thead>
-                                <tr class="bg-gray-100 text-gray-700">
-                                    <th class="border-r border-t border-b border-gray-400 p-1.5 w-[22%] text-center">階段 / 說明</th>
-                                    <th class="border-t border-b border-gray-400 p-1.5 w-[78%] text-center">照片與施工日期</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- 施工前 -->
-                                <tr style="height: 33.3%;">
-                                    <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-blue-600 text-sm">
-                                        施<br>工<br>前
-                                    </td>
-                                    <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
-                                        <div class="flex items-center gap-1 no-print">
-                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                            <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateBefore = this.value; drawCanvas(${pIdx}, 'Before');">
-                                        </div>
-                                        <div class="no-print">
-                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
-                                        </div>
-                                        <div class="text-center">
-                                            <canvas id="canvas_${pIdx}_Before" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgBefore ? '' : 'hidden'}"></canvas>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- 施工中 -->
-                                <tr style="height: 33.3%;">
-                                    <td class="border-r border-b border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-yellow-600 text-sm">
-                                        施<br>工<br>中
-                                    </td>
-                                    <td class="border-b border-gray-400 p-1.5 space-y-1 align-middle">
-                                        <div class="flex items-center gap-1 no-print">
-                                            <span class="font-semibold text-gray-600 text-xs">日期:</span>
-                                            <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white" onchange="pagesData[${pIdx}].dateDuring = this.value; drawCanvas(${pIdx}, 'During');">
-                                        </div>
-                                        <div class="no-print">
-                                            <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, ${pIdx}, 'During')">
-                                        </div>
-                                        <div class="text-center">
-                                            <canvas id="canvas_${pIdx}_During" class="photo-canvas mx-auto rounded border shadow-sm ${data.imgDuring ? '' : 'hidden'}"></canvas>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- 施工後 -->
-                                <tr style="height: 33.3%;">
-                                    <td class="border-r border-gray-400 p-1.5 bg-gray-50 text-center align-middle font-bold text-green-600 text-sm">
+                    <table class="report-table">
+                        <!-- 大標題 -->
+                        <tr style="height: 42px;">
+                            <th colspan="2" class="text-lg font-bold tracking-[10px] bg-white text-black font-serif" style="font-family: '標楷體', 'DFKai-SB', serif;">
+                                施 工 照 片
+                            </th>
+                        </tr>
+                        <!-- 工程名稱 -->
+                        <tr style="height: 36px;">
+                            <td class="w-[20%] font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">工程名稱</td>
+                            <td class="w-
