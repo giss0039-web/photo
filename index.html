@@ -76,7 +76,7 @@
             </div>
         </div>
 
-        <!-- 動態細項項目 (隨選單動態顯示) -->
+        <!-- 動態細項項目 -->
         <div id="section_PN" class="card p-4 d-none">
             <h4 class="mb-3 text-success border-bottom pb-2">[PN] 攀爬架 檢查項目</h4>
             <div class="mb-3">
@@ -150,9 +150,7 @@
     </form>
 </div>
 
-<!-- ========================================== -->
-<!-- 📑 PDF 隱藏排版區（專門用來轉成正式 A4 PDF 報表） -->
-<!-- ========================================== -->
+<!-- PDF 隱藏印刷版面 -->
 <div id="pdfReportLayout">
     <div class="report-header">巡檢維護紀錄照片表</div>
     <table class="report-table">
@@ -166,13 +164,15 @@
 </div>
 
 <script>
-    // ⚠️ 填入您的 GitHub 自動化金鑰設定
+    // 🚀 已幫您填好剛才產生的金鑰與資料庫連線！
     const GISS_CONFIG = {
-        token: "請在此處貼上您的_ghp_通行金鑰", // 👈 貼上您剛剛複製存好的 ghp_ 開頭金鑰
+        token: "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", 
         username: "giss0039-web",
-        repo: "playground-data"          // 👈 指向您剛剛建立的全新資料庫儲存庫（亦可改回 "photo"）
+        repo: "photo"                    
     };
 
-    document.getElementById('inspectDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('inspectDate').value = new Date().toISOString().split('T');
 
     function switchFacilitySection() {
+        const selectedType = document.getElementById('facilityType').value;
+        ['PN', 'SY', 'DA', 'DI'].forEach(type => {
