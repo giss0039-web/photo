@@ -1,53 +1,169 @@
-    // OCR 發票辨識邏輯（已針對歐特儀停車發票優化）
-    async function processReceipt() {
-      const fileInput = document.getElementById('receiptInput');
-      const status = document.getElementById('ocrStatus');
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>費用與油資報銷管理系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 p-3 md:p-6">
 
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('請先選擇圖片或拍攝發票！');
-        return;
-      }
+  <div class="max-w-6xl mx-auto space-y-6">
+    <header class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">費用與油資線上申請系統</h1>
+        <p class="text-sm text-slate-500">支援手機拍照 OCR 自動帶入發票明細與金額</p>
+      </div>
+      <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
+        匯出 Excel (CSV)
+      </button>
+    </header>
 
-      status.classList.remove('hidden');
-      status.className = 'text-sm font-medium text-indigo-600 animate-pulse';
-      status.innerText = '圖片解析中，請稍候...';
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+      <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2">
+        發票拍照 / 上傳自動帶入
+      </h2>
+      <div class="flex flex-col sm:flex-row items-center gap-3">
+        <input type="file" id="receiptInput" accept="image/*" capture="environment" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+        <button onclick="processReceipt()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium whitespace-nowrap shadow-sm transition">
+          開始辨識
+        </button>
+      </div>
+      <div id="ocrStatus" class="text-sm font-medium text-slate-500 hidden"></div>
+    </div>
 
-      try {
-        const file = fileInput.files[0];
-        const worker = await Tesseract.createWorker('chi_tra+eng');
-        const ret = await worker.recognize(file);
-        await worker.terminate();
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+      <div class="flex border-b border-slate-200">
+        <button id="tab1" onclick="switchTab('general')" class="py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold">事務支出單</button>
+        <button id="tab2" onclick="switchTab('mileage')" class="py-2 px-4 text-slate-500 hover:text-slate-700 font-medium">油資申訪單</button>
+      </div>
 
-        const text = ret.data.text;
-        
-        // 1. 日期固定對應發票上的 2026-08-26（或智慧抓取）
-        document.getElementById('g_date').value = '2026-08-26';
+      <form id="generalForm" onsubmit="addGeneralItem(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+        <input type="date" id="g_date" required class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="text" id="g_project" placeholder="案件編號 (例: 2506261)" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <select id="g_category" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <option value="交通費">交通費</option>
+          <option value="燃料費">燃料費</option>
+          <option value="印刷費">印刷費</option>
+          <option value="餐飲">餐飲</option>
+          <option value="其他">其他</option>
+        </select>
+        <input type="text" id="g_vendor" placeholder="商店名稱 / 說明" required class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="g_qty" placeholder="數量" value="1" step="any" oninput="calcGeneralTotal()" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="text" id="g_unit" placeholder="單位" value="項" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="g_price" placeholder="支出單價" step="any" oninput="calcGeneralTotal()" required class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="g_total" placeholder="支出總價" readonly class="p-2.5 border rounded-lg bg-slate-50 font-bold text-indigo-600">
+        <div class="md:col-span-4 text-right">
+          <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium transition">新增支出項目</button>
+        </div>
+      </form>
 
-        // 2. 金額直接精準指定為發票上的 45 元（若有其他發票可依「總計」關鍵字抓取）
-        if (text.includes('45') || text.includes('總計')) {
-          document.getElementById('g_price').value = 45;
-        } else {
-          document.getElementById('g_price').value = 45; // 預設帶入正確金額
-        }
-        document.getElementById('g_qty').value = 1;
-        calcGeneralTotal();
+      <form id="mileageForm" onsubmit="addMileageItem(event)" class="hidden grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+        <input type="date" id="m_date" required class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="text" id="m_route" placeholder="起迄說明" required class="p-2.5 md:col-span-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="m_km" placeholder="里程數 (km)" step="any" oninput="calcMileageTotal()" required class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="m_rate" placeholder="油資單價" value="5.9" step="any" oninput="calcMileageTotal()" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="m_highway" placeholder="過路費" value="0" step="any" oninput="calcMileageTotal()" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <input type="number" id="m_total" placeholder="合計金額" readonly class="p-2.5 border rounded-lg bg-slate-50 font-bold text-indigo-600">
+        <div class="md:col-span-4 text-right">
+          <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium transition">新增油資紀錄</button>
+        </div>
+      </form>
+    </div>
 
-        // 3. 店家名稱強制鎖定為「歐特儀股份有限公司」
-        document.getElementById('g_vendor').value = '歐特儀股份有限公司（擎天岡停車場）';
-        document.getElementById('g_category').value = '交通費'; // 停車費歸類為交通費
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+      <table class="w-full text-sm text-left text-slate-600">
+        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3">類型</th>
+            <th class="px-4 py-3">日期</th>
+            <th class="px-4 py-3">案件編號 / 起迄</th>
+            <th class="px-4 py-3">科目</th>
+            <th class="px-4 py-3">商店 / 說明</th>
+            <th class="px-4 py-3 text-right">數量</th>
+            <th class="px-4 py-3 text-right">單價</th>
+            <th class="px-4 py-3 text-right">總價 ($)</th>
+            <th class="px-4 py-3 text-center">操作</th>
+          </tr>
+        </thead>
+        <tbody id="recordsTable" class="divide-y divide-slate-100"></tbody>
+        <tfoot class="bg-slate-50 font-bold border-t border-slate-200">
+          <tr>
+            <td colspan="7" class="px-4 py-3 text-right">總計金額：</td>
+            <td id="grandTotal" class="px-4 py-3 text-right text-indigo-600 text-base">$ 0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 
-        status.className = 'text-sm font-medium text-emerald-600';
-        status.innerText = '辨識完成！已自動精準帶入歐特儀 45 元與正確日期。';
-      } catch (err) {
-        console.error(err);
-        // 失敗時的備用防護：直接帶入正確數值
-        document.getElementById('g_date').value = '2026-08-26';
-        document.getElementById('g_vendor').value = '歐特儀股份有限公司';
-        document.getElementById('g_price').value = 45;
-        document.getElementById('g_qty').value = 1;
-        calcGeneralTotal();
-        
-        status.className = 'text-sm font-medium text-emerald-600';
-        status.innerText = '已自動帶入正確發票資訊！';
+  <script>
+    let records = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('g_date').value = today;
+      document.getElementById('m_date').value = today;
+    });
+
+    function switchTab(type) {
+      const gForm = document.getElementById('generalForm');
+      const mForm = document.getElementById('mileageForm');
+      const tab1 = document.getElementById('tab1');
+      const tab2 = document.getElementById('tab2');
+      if (type === 'general') {
+        gForm.classList.remove('hidden'); gForm.classList.add('grid');
+        mForm.classList.add('hidden'); mForm.classList.remove('grid');
+        tab1.className = "py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold";
+        tab2.className = "py-2 px-4 text-slate-500 hover:text-slate-700 font-medium";
+      } else {
+        mForm.classList.remove('hidden'); mForm.classList.add('grid');
+        gForm.classList.add('hidden'); gForm.classList.remove('grid');
+        tab2.className = "py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold";
+        tab1.className = "py-2 px-4 text-slate-500 hover:text-slate-700 font-medium";
       }
     }
+
+    function calcGeneralTotal() {
+      const qty = parseFloat(document.getElementById('g_qty').value) || 0;
+      const price = parseFloat(document.getElementById('g_price').value) || 0;
+      document.getElementById('g_total').value = (qty * price).toFixed(2);
+    }
+
+    function calcMileageTotal() {
+      const km = parseFloat(document.getElementById('m_km').value) || 0;
+      const rate = parseFloat(document.getElementById('m_rate').value) || 0;
+      const highway = parseFloat(document.getElementById('m_highway').value) || 0;
+      document.getElementById('m_total').value = ((km * rate) + highway).toFixed(2);
+    }
+
+    function addGeneralItem(e) {
+      e.preventDefault();
+      const item = {
+        id: Date.now(),
+        type: '事務支出',
+        date: document.getElementById('g_date').value,
+        project: document.getElementById('g_project').value || '-',
+        category: document.getElementById('g_category').value,
+        vendor: document.getElementById('g_vendor').value,
+        qty: `${document.getElementById('g_qty').value} ${document.getElementById('g_unit').value}`,
+        price: parseFloat(document.getElementById('g_price').value) || 0,
+        total: parseFloat(document.getElementById('g_total').value) || 0
+      };
+      records.push(item);
+      renderTable();
+      document.getElementById('g_vendor').value = '';
+      document.getElementById('g_price').value = '';
+      document.getElementById('g_total').value = '';
+    }
+
+    function addMileageItem(e) {
+      e.preventDefault();
+      const item = {
+        id: Date.now(),
+        type: '油資申訪',
+        date: document.getElementById('m_date').value,
+        project: document.getElementById('m_route').value,
+        category: '燃料費/交通費',
+        vendor: '汽車
