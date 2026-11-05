@@ -3,169 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>施工照片報告產生器</title>
-    <!-- 引入 Bootstrap 5 提供排版樣式 -->
-    <link href="https://jsdelivr.net" rel="stylesheet">
-    <!-- 引入 html2pdf.js 用於前端轉存 PDF -->
-    <script src="https://cloudflare.com"></script>
+    <title>施工照片報告</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        body { background-color: #f8f9fa; font-family: "Microsoft JhengHei", sans-serif; padding-top: 20px; }
-        .control-panel { max-width: 800px; margin: 0 auto 20px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; background-color: #fff; padding: 20px; border-top: 5px solid #0d6efd; }
-        .page-container { background: #fff; width: 210mm; min-height: 297mm; padding: 20mm; margin: 0 auto 20px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15); box-sizing: border-box; }
-        .main-table { width: 100%; border-collapse: collapse; background: #fff; margin: 0; table-layout: fixed; }
-        .main-table th, .main-table td { border: 1px solid #000; padding: 8px; font-size: 16px; font-family: "標楷體", "Microsoft JhengHei", serif; }
-        .title-cell { text-align: center; font-weight: bold; font-size: 24px; letter-spacing: 10px; padding: 12px 0; }
-        .label-cell { width: 18%; font-weight: bold; text-align: center; vertical-align: middle; background-color: #fff; }
-        .content-cell { width: 82%; vertical-align: middle; padding: 5px 10px; }
-        .content-cell input { width: 100%; border: none; font-size: 16px; font-family: "標楷體", sans-serif; padding: 4px; }
-        .content-cell input:focus { outline: 1px dashed #0d6efd; background-color: #f0f7ff; }
-        .stage-row { height: 240px; }
-        .stage-label { width: 18%; text-align: center; vertical-align: middle; font-weight: bold; font-size: 20px; letter-spacing: 5px; line-height: 2; }
-        .stage-photo-cell { width: 82%; text-align: center; padding: 10px; vertical-align: middle; position: relative; cursor: pointer; background-color: #fff; }
-        .stage-photo-cell img { max-width: 100%; max-height: 210px; object-fit: contain; display: block; margin: 0 auto; }
-        .date-container { text-align: right; font-size: 14px; margin-bottom: 5px; font-family: sans-serif; }
-        .date-input { border: none; text-align: right; width: 150px; font-size: 14px; }
-        .upload-placeholder { color: #aaa; font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: right; padding-right: 20px; align-items: flex-end; }
-        .page-break { page-break-before: always; margin-top: 30px; }
-        @media print { body { background-color: #fff; padding: 0; } .control-panel { display: none; } .page-container { box-shadow: none; margin: 0; padding: 0; page-break-after: always; } }
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            input, textarea { border: none !important; background: transparent !important; resize: none !important; }
+            .page-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 12mm 15mm !important;
+                height: 297mm !important;
+                page-break-after: always;
+                break-after: page;
+            }
+        }
+        .page-container {
+            page-break-after: always;
+            break-after: page;
+            box-sizing: border-box;
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto 10px auto;
+            background: white;
+            padding: 12mm 15mm;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 100% 擬真 Word 工程表格樣式 */
+        .report-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+            table-layout: fixed;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #000000;
+            padding: 0;
+            margin: 0;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .photo-box {
+            width: 100%;
+            height: 100%;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            background: #ffffff;
+        }
+        
+        .photo-canvas {
+            max-width: 90%;
+            max-height: 200px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            letter-spacing: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: "標楷體", "DFKai-SB", "Microsoft JhengHei", serif;
+            margin: 0 auto;
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 py-3 px-2">
 
-<!-- 頂部控制面板：完全符合您的原版配置 -->
-<div class="control-panel">
-    <h4 class="text-center fw-bold mb-3">施工照片報告產生器</h4>
-    <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 14px;">
-        💡 <strong>批次上傳照片：</strong><br>
-        選擇多張照片，自動每 3 張分配一頁 A4！
+    <!-- 全域控制列 (不印出) -->
+    <div class="max-w-xl mx-auto mb-4 p-3 bg-white shadow rounded-xl no-print space-y-2 border border-gray-200">
+        <h1 class="text-base font-bold text-center text-gray-800">施工照片報告產生器</h1>
+        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-2">
+            <div>
+                <span class="font-bold text-blue-900 text-xs block">💡 批次上傳照片：</span>
+                <span class="text-xs text-blue-700">選擇多張照片，自動每 3 張分配一頁 A4！</span>
+            </div>
+            <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
+                選擇多張照片
+                <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
+            </label>
+        </div>
+        <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg shadow hover:bg-blue-700 text-sm transition">
+            🖨️ 點我列印 / 存成 PDF 檔案
+        </button>
     </div>
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <input type="file" id="batchPhotoInput" accept="image/*" multiple class="d-none" onchange="handleBatchUpload()">
-        <button type="button" class="btn btn-outline-primary fw-bold" onclick="document.getElementById('batchPhotoInput').click()">選擇多張照片</button>
-        <span id="uploadStatus" class="text-muted small">尚未選取照片</span>
-    </div>
-    <button type="button" class="btn btn-primary btn-lg w-100 fw-bold" onclick="generatePDFReport()">🖨️ 點我列印 / 存成 PDF 檔案</button>
-</div>
 
-<!-- 動態報告生成印刷區 -->
-<div id="reportRenderArea">
-    <!-- 預設顯示第一頁空表格，外觀完全復刻您的截圖 -->
-    <div class="page-container" id="page_0">
-        <table class="main-table">
-            <tr><td colspan="2" class="title-cell">施 工 照 片</td></tr>
-            <tr><td class="label-cell">工程名稱</td><td class="content-cell"><input type="text" class="sync-input-park" placeholder="請輸入工程名稱" value="新北市客家文化園區景觀設施及特色遊具工程"></td></tr>
-            <tr><td class="label-cell">承攬廠商</td><td class="content-cell"><input type="text" class="sync-input-vendor" placeholder="請輸入承攬廠商" value="嘉大興營造股份有限公司"></td></tr>
-            <tr><td class="label-cell">施作項目</td><td class="content-cell"><input type="text" class="sync-input-project" placeholder="請輸入本頁施作項目" value="施工圍籬"></td></tr>
-            <tr class="stage-row">
-                <td class="stage-label">施<br>工<br>前</td>
-                <td class="stage-photo-cell" onclick="triggerSingleUpload(0, 0)">
-                    <div class="date-container">拍攝日期：<input type="date" class="date-input" value="2026-11-05"></div>
-                    <div id="img_container_0_0" class="upload-placeholder">點擊<br>框內<br>上傳<br>照片</div>
-                </td>
-            </tr>
-            <tr class="stage-row">
-                <td class="stage-label">施<br>工<br>中</td>
-                <td class="stage-photo-cell" onclick="triggerSingleUpload(0, 1)">
-                    <div class="date-container">拍攝日期：<input type="date" class="date-input" value="2026-11-05"></div>
-                    <div id="img_container_0_1" class="upload-placeholder">點擊<br>框內<br>上傳<br>照片</div>
-                </td>
-            </tr>
-            <tr class="stage-row">
-                <td class="stage-label">施<br>工<br>後</td>
-                <td class="stage-photo-cell" onclick="triggerSingleUpload(0, 2)">
-                    <div class="date-container">拍攝日期：<input type="date" class="date-input" value="2026-11-05"></div>
-                    <div id="img_container_0_2" class="upload-placeholder">點擊<br>框內<br>上傳<br>照片</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-</div>
+    <!-- 輸出列印區域 -->
+    <div id="print-area"></div>
 
-<!-- 隱藏的獨立單張上傳觸發器 -->
-<input type="file" id="singlePhotoInput" accept="image/*" class="d-none" onchange="handleSingleUpload()">
+    <script>
+        const todayStr = new Date().toISOString().split('T')[0];
+        let globalProject = '';
+        let globalVendor = '';
+        let pagesData = [];
 
-<script>
-    // 🔒 隱藏的自動化 GitHub 連線金鑰
-    const GISS_CONFIG = {
-        token: "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",
-        username: "giss0039-web",
-        repo: "photo"
-    };
+        // 初始化第 1 頁
+        pagesData.push({
+            item: '',
+            dateBefore: todayStr, imgBefore: null,
+            dateDuring: todayStr, imgDuring: null,
+            dateAfter: todayStr, imgAfter: null
+        });
 
-    let allPhotoBase64Pool = [];
-    let currentTargetPage = 0;
-    let currentTargetStage = 0;
+        function renderAllPages() {
+            const container = document.getElementById('print-area');
+            container.innerHTML = '';
 
-    // 處理多張照片批次上傳並每 3 張自動分一頁 A4
-    function handleBatchUpload() {
-        const files = document.getElementById('batchPhotoInput').files;
-        if (!files.length) return;
-        
-        document.getElementById('uploadStatus').innerText = `正在讀取 ${files.length} 張照片...`;
-        allPhotoBase64Pool = [];
-        let loadedCount = 0;
+            pagesData.forEach((data, pIdx) => {
+                const div = document.createElement('div');
+                div.className = 'page-container shadow-xl rounded-sm';
+                div.innerHTML = `
+                    <table class="report-table">
+                        <!-- 大標題 -->
+                        <tr style="height: 42px;">
+                            <th colspan="2" class="text-lg font-bold tracking-[10px] bg-white text-black font-serif" style="font-family: '標楷體', 'DFKai-SB', serif;">
+                                施 工 照 片
+                            </th>
+                        </tr>
+                        <!-- 工程名稱 (全域同步) -->
+                        <tr style="height: 36px;">
+                            <td class="w-[20%] font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">工程名稱</td>
+                            <td class="w-[80%] text-left px-2">
+                                <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalProject(this.value)">
+                            </td>
+                        </tr>
+                        <!-- 承攬廠商 (全域同步) -->
+                        <tr style="height: 36px;">
+                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">承攬廠商</td>
+                            <td class="text-left px-2">
+                                <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalVendor(this.value)">
+                            </td>
+                        </tr>
+                        <!-- 施作項目 (本頁獨立) -->
+                        <tr style="height: 36px;">
+                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">施作項目</td>
+                            <td class="text-left px-2">
+                                <input type="text" value="${data.item}" placeholder="請輸入本頁施作項目" class="w-full outline-none text-sm font-serif bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
+                            </td>
+                        </tr>
+                        <!-- 施工前 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工前</div>
+                            </td>
+                            <td>
+                                <div class="w-full h-full flex flex-col justify-between p-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'Before', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'Before')">
+                                        <input type="file" id="file_${pIdx}_Before" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
+                                        <canvas id="canvas_${pIdx}_Before" class="photo-canvas ${data.imgBefore ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgBefore ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工中 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工中</div>
+                            </td>
+                            <td>
+                                <div class="w-full h-full flex flex-col justify-between p-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'During', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'During')">
+                                        <input type="file" id="file_${pIdx}_During" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'During')">
+                                        <canvas id="canvas_${pIdx}_During" class="photo-canvas ${data.imgDuring ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgDuring ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 施工後 -->
+                        <tr style="height: 30%;">
+                            <td class="bg-white">
+                                <div class="vertical-text">施工後</div>
+                            </td>
+                            <td>
+                                <div class="w-full h-full flex flex-col justify-between p-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'After', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'After')">
+                                        <input type="file" id="file_${pIdx}_After" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'After')">
+                                        <canvas id="canvas_${pIdx}_After" class="photo-canvas ${data.imgAfter ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgAfter ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                `;
+                container.appendChild(div);
 
-        for (let i = 0; i < files.length; i++) {
+                if (data.imgBefore) drawCanvas(pIdx, 'Before');
+                if (data.imgDuring) drawCanvas(pIdx, 'During');
+                if (data.imgAfter) drawCanvas(pIdx, 'After');
+            });
+        }
+
+        function triggerFileInput(pIdx, type) {
+            document.getElementById(`file_${pIdx}_${type}`).click();
+        }
+
+        function syncGlobalProject(val) {
+            globalProject = val;
+            document.querySelectorAll('input[placeholder="請輸入工程名稱"]').forEach(input => input.value = val);
+        }
+
+        function syncGlobalVendor(val) {
+            globalVendor = val;
+            document.querySelectorAll('input[placeholder="請輸入承攬廠商"]').forEach(input => input.value = val);
+        }
+
+        function updateDate(pIdx, type, val) {
+            pagesData[pIdx]['date' + type] = val;
+            drawCanvas(pIdx, type);
+        }
+
+        function handleBatchImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const totalPages = Math.ceil(files.length / 3);
+            
+            while (pagesData.length < totalPages) {
+                pagesData.push({
+                    item: '',
+                    dateBefore: todayStr, imgBefore: null,
+                    dateDuring: todayStr, imgDuring: null,
+                    dateAfter: todayStr, imgAfter: null
+                });
+            }
+            pagesData = pagesData.slice(0, totalPages);
+
+            let fileIdx = 0;
+            const stages = ['Before', 'During', 'After'];
+
+            for (let p = 0; p < totalPages; p++) {
+                for (let s = 0; s < 3; s++) {
+                    if (fileIdx < files.length) {
+                        const file = files[fileIdx++];
+                        const stage = stages[s];
+                        const reader = new FileReader();
+                        
+                        reader.onload = (function(pIdx, stg) {
+                            return function(e) {
+                                const img = new Image();
+                                img.onload = function() {
+                                    pagesData[pIdx]['img' + stg] = img;
+                                    drawCanvas(pIdx, stg);
+                                };
+                                img.src = e.target.result;
+                            };
+                        })(p, stage);
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+            renderAllPages();
+        }
+
+        function handleImageUpload(event, pIdx, type) {
+            event.stopPropagation();
+            const file = event.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                allPhotoBase64Pool.push(e.target.result);
-                loadedCount++;
-                if (loadedCount === files.length) {
-                    renderMultiPageReport();
-                }
+                const img = new Image();
+                img.onload = function() {
+                    pagesData[pIdx]['img' + type] = img;
+                    drawCanvas(pIdx, type);
+                    renderAllPages();
+                };
+                img.src = e.target.result;
             };
-            reader.readAsDataURL(files[i]);
+            reader.readAsDataURL(file);
         }
-    }
 
-    function renderMultiPageReport() {
-        const renderArea = document.getElementById('reportRenderArea');
-        const parkName = document.querySelector('.sync-input-park').value;
-        const vendorName = document.querySelector('.sync-input-vendor').value;
-        const workProject = document.querySelector('.sync-input-project').value;
-        const todayStr = new Date().toISOString().split('T')[0];
+        function drawCanvas(pIdx, type) {
+            const data = pagesData[pIdx];
+            const img = data['img' + type];
+            if (!img) return;
 
-        renderArea.innerHTML = '';
-        const totalPhotos = allPhotoBase64Pool.length;
-        const totalPages = Math.max(1, Math.ceil(totalPhotos / 3));
-        const stageLabels = ["施<br>工<br>前", "施<br>工<br>中", "施<br>工<br>後"];
+            const canvas = document.getElementById(`canvas_${pIdx}_${type}`);
+            if (!canvas) return;
 
-        for (let page = 0; page < totalPages; page++) {
-            const pageDiv = document.createElement('div');
-            pageDiv.className = `page-container ${page > 0 ? 'page-break' : ''}`;
-            pageDiv.id = `page_${page}`;
+            const dateVal = data['date' + type] || todayStr;
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
 
-            let tableHtml = `
-                <table class="main-table">
-                    <tr><td colspan="2" class="title-cell">施 工 照 片</td></tr>
-                    <tr><td class="label-cell">工程名稱</td><td class="content-cell"><input type="text" class="sync-input-park" value="${parkName}" oninput="syncInputs('park', this.value)"></td></tr>
-                    <tr><td class="label-cell">承攬廠商</td><td class="content-cell"><input type="text" class="sync-input-vendor" value="${vendorName}" oninput="syncInputs('vendor', this.value)"></td></tr>
-                    <tr><td class="label-cell">施作項目</td><td class="content-cell"><input type="text" class="sync-input-project" value="${workProject}" oninput="syncInputs('project', this.value)"></td></tr>
-            `;
+            // 在照片右下角壓印日期 (格式: YYYY.MM.DD)
+            if (dateVal) {
+                const formattedDate = dateVal.replace(/-/g, '.');
+                const fontSize = Math.max(canvas.width * 0.038, 18);
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                ctx.fillStyle = '#FFC000';
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 4;
+                ctx.lineWidth = 2;
 
-            for (let stage = 0; stage < 3; stage++) {
-                const photoIdx = page * 3 + stage;
-                const imgSrc = (photoIdx < totalPhotos) ? allPhotoBase64Pool[photoIdx] : "";
-                const cellContent = imgSrc ? `<img src="${imgSrc}">` : `<div id="img_container_${page}_${stage}" class="upload-placeholder">點擊<br>框內<br>上傳<br>照片</div>`;
+                const metrics = ctx.measureText(formattedDate);
+                const x = canvas.width - metrics.width - 20;
+                const y = canvas.height - 20;
 
-                tableHtml += `
-                    <tr class="stage-row">
-                        <td class="stage-label">${stageLabels[stage]}</td>
-                        <td class="stage-photo-cell" onclick="triggerSingleUpload(${page}, ${stage})">
-                            <div class="date-container">拍攝日期：<input type="date" class="date-input" value="${todayStr}"></div>
-                            ${cellContent}
-                        </td>
-                    </tr>
-                `;
+                ctx.strokeText(formattedDate, x, y);
+                ctx.fillText(formattedDate, x, y);
             }
-
-            tableHtml += `</table>`;
-            pageDiv.innerHTML = tableHtml;
-            renderArea.appendChild(pageDiv);
+            canvas.classList.remove('hidden');
         }
-        document.getElementById('uploadStatus').innerText = `已成功排版 ${totalPhotos} 張照片（共 ${totalPages} 頁 A4）`;
-    }
 
-    function triggerSingleUpload(page, stage) {
-        currentTargetPage = page;
-        currentTargetStage = stage;
+        // 初始化渲染
+        renderAllPages();
+    </script>
+
+</body>
+</html>
