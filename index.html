@@ -3,342 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>施工照片報告</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>工程共融遊具巡檢：PDF導出與GitHub自動備份系統</title>
+    <!-- 引入 Bootstrap 5 提供手機版面優化 -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
+    <!-- 引入 html2pdf.js 核心插件，用於手機前端直接將網頁轉存成 PDF -->
+    <script src="https://cloudflare.com"></script>
     <style>
-        @page {
-            size: A4 portrait;
-            margin: 0;
-        }
-        @media print {
-            body { background: white; padding: 0; margin: 0; }
-            .no-print { display: none !important; }
-            input, textarea { border: none !important; background: transparent !important; resize: none !important; }
-            .page-container {
-                box-shadow: none !important;
-                margin: 0 !important;
-                padding: 12mm 15mm !important;
-                height: 297mm !important;
-                page-break-after: always;
-                break-after: page;
-            }
-        }
-        .page-container {
-            page-break-after: always;
-            break-after: page;
-            box-sizing: border-box;
-            width: 210mm;
-            height: 297mm;
-            margin: 0 auto 10px auto;
-            background: white;
-            padding: 12mm 15mm;
-            display: flex;
-            flex-direction: column;
-        }
+        body { background-color: #f8f9fa; font-family: "Microsoft JhengHei", sans-serif; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; margin-bottom: 20px; }
+        .preview-img { max-width: 100%; max-height: 180px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-top: 10px; }
+        .required::after { content: " *"; color: red; }
         
-        /* 100% 擬真 Word 工程表格樣式 */
-        .report-table {
-            width: 100%;
-            height: 100%;
-            border-collapse: collapse;
-            border: 2px solid #000000;
-            table-layout: fixed;
-        }
-        .report-table th, .report-table td {
-            border: 1px solid #000000;
-            padding: 0;
-            margin: 0;
-            vertical-align: middle;
-            text-align: center;
-        }
-        
-        .photo-box {
-            width: 100%;
-            height: 100%;
-            min-height: 180px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: relative;
-            background: #ffffff;
-        }
-        
-        .photo-canvas {
-            max-width: 90%;
-            max-height: 200px;
-            object-fit: contain;
-            display: block;
-            margin: 0 auto;
-        }
-
-        .vertical-text {
-            writing-mode: vertical-rl;
-            letter-spacing: 6px;
-            font-size: 16px;
-            font-weight: 500;
-            font-family: "標楷體", "DFKai-SB", "Microsoft JhengHei", serif;
-            margin: 0 auto;
-        }
+        /* 專門為工程履約 A4 PDF 報告設計的列印排版樣式 */
+        #pdfReportLayout { background: #fff; padding: 0; display: none; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 14px; vertical-align: top; }
+        .report-header { text-align: center; font-weight: bold; font-size: 22px; padding: 10px 0; letter-spacing: 2px; }
+        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+        .photo-box { border: 1px solid #000; padding: 10px; text-align: center; background: #fff; }
+        .photo-box img { max-width: 100%; height: 220px; object-fit: contain; }
+        .photo-desc { margin-top: 8px; font-weight: bold; border-top: 1px solid #000; padding-top: 5px; font-size: 13px; }
     </style>
 </head>
-<body class="bg-gray-100 py-3 px-2">
+<body>
 
-    <!-- 全域控制列 (不印出) -->
-    <div class="max-w-xl mx-auto mb-4 p-3 bg-white shadow rounded-xl no-print space-y-2 border border-gray-200">
-        <h1 class="text-base font-bold text-center text-gray-800">施工照片報告產生器</h1>
-        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-2">
-            <div>
-                <span class="font-bold text-blue-900 text-xs block">💡 批次上傳照片：</span>
-                <span class="text-xs text-blue-700">選擇多張照片，自動每 3 張分配一頁 A4！</span>
-            </div>
-            <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
-                選擇多張照片
-                <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
-            </label>
-        </div>
-        <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg shadow hover:bg-blue-700 text-sm transition">
-            🖨️ 點我列印 / 存成 PDF 檔案
-        </button>
+<div class="container py-4">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-dark">工程共融遊具定期檢查表</h2>
+        <p class="text-muted">【雙重同步】手機下載 A4 PDF ＋ 自動同步回傳 GitHub 資料庫</p>
     </div>
 
-    <!-- 輸出列印區域 -->
-    <div id="print-area"></div>
+    <form id="inspectionForm">
+        <!-- 一、 基本資料 -->
+        <div class="card p-4">
+            <h4 class="mb-3 text-secondary border-bottom pb-2">一、 基本資料</h4>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label required">工程名稱</label>
+                    <input type="text" class="form-control" id="parkName" value="111年度草屯鎮親子共融遊憩運動公園興建工程" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label required">巡檢日期</label>
+                    <input type="date" class="form-control" id="inspectDate" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label required">天氣狀況</label>
+                    <select class="form-select" id="weather" required>
+                        <option value="晴">晴</option>
+                        <option value="陰">陰</option>
+                        <option value="雨">雨</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">檢查人員</label>
+                    <input type="text" class="form-control" id="inspector" placeholder="請輸入姓名" required>
+                </div>
+            </div>
+        </div>
 
-    <script>
-        const todayStr = new Date().toISOString().split('T')[0];
-        let globalProject = '';
-        let globalVendor = '';
-        let pagesData = [];
+        <!-- 二、 設施類別 -->
+        <div class="card p-4">
+            <h4 class="mb-3 text-secondary border-bottom pb-2">二、 巡檢設施類別</h4>
+            <div class="mb-3">
+                <label class="form-label required">請選擇本次欲檢查的遊具設施</label>
+                <select class="form-select" id="facilityType" onchange="switchFacilitySection()" required>
+                    <option value="">-- 請選擇 --</option>
+                    <option value="PN">[PN] 攀爬架/攀爬設備</option>
+                    <option value="SY">[SY] 旋轉盤</option>
+                    <option value="DA">[DA] 單槓</option>
+                    <option value="DI">[DI] 橡膠地墊及無縫地墊</option>
+                </select>
+            </div>
+        </div>
 
-        // 初始化第 1 頁
-        pagesData.push({
-            item: '',
-            dateBefore: todayStr, imgBefore: null,
-            dateDuring: todayStr, imgDuring: null,
-            dateAfter: todayStr, imgAfter: null
-        });
+        <!-- 動態細項項目 (隨選單動態顯示) -->
+        <div id="section_PN" class="card p-4 d-none">
+            <h4 class="mb-3 text-success border-bottom pb-2">[PN] 攀爬架 檢查項目</h4>
+            <div class="mb-3">
+                <label class="form-label fw-bold">1. 遊具鋼構情形</label>
+                <div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="pn_1" value="正常" checked><label class="form-check-label">正常</label></div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="pn_1" value="脫漆"><label class="form-check-label">脫漆</label></div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="pn_1" value="鏽蝕"><label class="form-check-label">鏽蝕</label></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">2. 遊具結合螺栓情形</label>
+                <div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="pn_2" value="正常" checked><label class="form-check-label">正常</label></div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="pn_2" value="鬆脫"><label class="form-check-label">鬆脫</label></div>
+                </div>
+            </div>
+        </div>
 
-        function renderAllPages() {
-            const container = document.getElementById('print-area');
-            container.innerHTML = '';
+        <div id="section_SY" class="card p-4 d-none">
+            <h4 class="mb-3 text-success border-bottom pb-2">[SY] 旋轉盤 檢查項目</h4>
+            <div class="mb-3">
+                <label class="form-label fw-bold">1. 旋轉盤情形</label>
+                <div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="sy_1" value="正常" checked><label class="form-check-label">正常</label></div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="sy_1" value="旋轉不順"><label class="form-check-label">旋轉不順</label></div>
+                </div>
+            </div>
+        </div>
 
-            pagesData.forEach((data, pIdx) => {
-                const div = document.createElement('div');
-                div.className = 'page-container shadow-xl rounded-sm';
-                div.innerHTML = `
-                    <table class="report-table">
-                        <!-- 大標題 -->
-                        <tr style="height: 42px;">
-                            <th colspan="2" class="text-lg font-bold tracking-[10px] bg-white text-black font-serif" style="font-family: '標楷體', 'DFKai-SB', serif;">
-                                施 工 照 片
-                            </th>
-                        </tr>
-                        <!-- 工程名稱 (全域同步) -->
-                        <tr style="height: 36px;">
-                            <td class="w-[20%] font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">工程名稱</td>
-                            <td class="w-[80%] text-left px-2">
-                                <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalProject(this.value)">
-                            </td>
-                        </tr>
-                        <!-- 承攬廠商 (全域同步) -->
-                        <tr style="height: 36px;">
-                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">承攬廠商</td>
-                            <td class="text-left px-2">
-                                <input type="text" value="${globalVendor}" placeholder="請輸入承攬廠商" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalVendor(this.value)">
-                            </td>
-                        </tr>
-                        <!-- 施作項目 (本頁獨立) -->
-                        <tr style="height: 36px;">
-                            <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">施作項目</td>
-                            <td class="text-left px-2">
-                                <input type="text" value="${data.item}" placeholder="請輸入本頁施作項目" class="w-full outline-none text-sm font-serif bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
-                            </td>
-                        </tr>
-                        <!-- 施工前 -->
-                        <tr style="height: 30%;">
-                            <td class="bg-white">
-                                <div class="vertical-text">施工前</div>
-                            </td>
-                            <td>
-                                <div class="w-full h-full flex flex-col justify-between p-1.5">
-                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
-                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
-                                        <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'Before', this.value)">
-                                    </div>
-                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'Before')">
-                                        <input type="file" id="file_${pIdx}_Before" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
-                                        <canvas id="canvas_${pIdx}_Before" class="photo-canvas ${data.imgBefore ? '' : 'hidden'}"></canvas>
-                                        ${!data.imgBefore ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- 施工中 -->
-                        <tr style="height: 30%;">
-                            <td class="bg-white">
-                                <div class="vertical-text">施工中</div>
-                            </td>
-                            <td>
-                                <div class="w-full h-full flex flex-col justify-between p-1.5">
-                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
-                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
-                                        <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'During', this.value)">
-                                    </div>
-                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'During')">
-                                        <input type="file" id="file_${pIdx}_During" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'During')">
-                                        <canvas id="canvas_${pIdx}_During" class="photo-canvas ${data.imgDuring ? '' : 'hidden'}"></canvas>
-                                        ${!data.imgDuring ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- 施工後 -->
-                        <tr style="height: 30%;">
-                            <td class="bg-white">
-                                <div class="vertical-text">施工後</div>
-                            </td>
-                            <td>
-                                <div class="w-full h-full flex flex-col justify-between p-1.5">
-                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
-                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
-                                        <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'After', this.value)">
-                                    </div>
-                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'After')">
-                                        <input type="file" id="file_${pIdx}_After" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'After')">
-                                        <canvas id="canvas_${pIdx}_After" class="photo-canvas ${data.imgAfter ? '' : 'hidden'}"></canvas>
-                                        ${!data.imgAfter ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                `;
-                container.appendChild(div);
+        <div id="section_DA" class="card p-4 d-none">
+            <h4 class="mb-3 text-success border-bottom pb-2">[DA] 單槓 檢查項目</h4>
+            <div class="mb-3">
+                <label class="form-label fw-bold">1. 鋼構漆面情形</label>
+                <div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="da_1" value="無掉漆" checked><label class="form-check-label">無掉漆</label></div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="da_1" value="已有部分掉漆"><label class="form-check-label">已有部分掉漆</label></div>
+                </div>
+            </div>
+        </div>
 
-                if (data.imgBefore) drawCanvas(pIdx, 'Before');
-                if (data.imgDuring) drawCanvas(pIdx, 'During');
-                if (data.imgAfter) drawCanvas(pIdx, 'After');
-            });
-        }
+        <div id="section_DI" class="card p-4 d-none">
+            <h4 class="mb-3 text-success border-bottom pb-2">[DI] 橡膠地墊及無縫地墊 檢查項目</h4>
+            <div class="mb-3">
+                <label class="form-label fw-bold">1. 地墊及收邊是否破損</label>
+                <div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="di_1" value="正常" checked><label class="form-check-label">正常</label></div>
+                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="di_1" value="破損"><label class="form-check-label">破損</label></div>
+                </div>
+            </div>
+        </div>
 
-        function triggerFileInput(pIdx, type) {
-            document.getElementById(`file_${pIdx}_${type}`).click();
-        }
+        <!-- 三、 照片紀錄 -->
+        <div class="card p-4">
+            <h4 class="mb-3 text-secondary border-bottom pb-2">三、 現場照片上傳</h4>
+            <div class="mb-3">
+                <label class="form-label required">拍照或上傳現場照片（可多張，手機會自動啟動相機）</label>
+                <input type="file" class="form-control" id="photoInput" accept="image/*" multiple onchange="previewImages()" required>
+            </div>
+            <div id="imagePreviewContainer" class="row g-2"></div>
+        </div>
 
-        function syncGlobalProject(val) {
-            globalProject = val;
-            document.querySelectorAll('input[placeholder="請輸入工程名稱"]').forEach(input => input.value = val);
-        }
+        <!-- 備註與送出 -->
+        <div class="card p-4">
+            <div class="mb-3">
+                <label class="form-label">備註說明 / 缺失補充</label>
+                <textarea class="form-control" id="remark" rows="3" placeholder="若有特殊缺失請在此備註..."></textarea>
+            </div>
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100">一鍵搞定：存成 PDF ＋ 上傳 GitHub</button>
+        </div>
+    </form>
+</div>
 
-        function syncGlobalVendor(val) {
-            globalVendor = val;
-            document.querySelectorAll('input[placeholder="請輸入承攬廠商"]').forEach(input => input.value = val);
-        }
+<!-- ========================================== -->
+<!-- 📑 PDF 隱藏排版區（專門用來轉成正式 A4 PDF 報表） -->
+<!-- ========================================== -->
+<div id="pdfReportLayout">
+    <div class="report-header">巡檢維護紀錄照片表</div>
+    <table class="report-table">
+        <tr><td style="width: 15%; font-weight: bold; background: #f2f2f2;">工程名稱</td><td id="pdf_parkName" style="width: 45%;"></td><td style="width: 15%; font-weight: bold; background: #f2f2f2;">巡檢日期</td><td id="pdf_date" style="width: 25%;"></td></tr>
+        <tr><td style="font-weight: bold; background: #f2f2f2;">檢查人員</td><td id="pdf_inspector"></td><td style="font-weight: bold; background: #f2f2f2;">天氣狀況</td><td id="pdf_weather"></td></tr>
+        <tr><td style="font-weight: bold; background: #f2f2f2;">設施類別</td><td id="pdf_facility" colspan="3" style="font-weight: bold; color: #0d6efd;"></td></tr>
+        <tr><td style="font-weight: bold; background: #f2f2f2;">檢查結果摘要</td><td id="pdf_results" colspan="3"></td></tr>
+        <tr><td style="font-weight: bold; background: #f2f2f2;">備註說明</td><td id="pdf_remark" colspan="3"></td></tr>
+    </table>
+    <div id="pdf_photoGrid" class="photo-grid"></div>
+</div>
 
-        function updateDate(pIdx, type, val) {
-            pagesData[pIdx]['date' + type] = val;
-            drawCanvas(pIdx, type);
-        }
+<script>
+    // ⚠️ 填入您的 GitHub 自動化金鑰設定
+    const GISS_CONFIG = {
+        token: "請在此處貼上您的_ghp_通行金鑰", // 👈 貼上您剛剛複製存好的 ghp_ 開頭金鑰
+        username: "giss0039-web",
+        repo: "playground-data"          // 👈 指向您剛剛建立的全新資料庫儲存庫（亦可改回 "photo"）
+    };
 
-        function handleBatchImages(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
+    document.getElementById('inspectDate').value = new Date().toISOString().split('T')[0];
 
-            const totalPages = Math.ceil(files.length / 3);
-            
-            while (pagesData.length < totalPages) {
-                pagesData.push({
-                    item: '',
-                    dateBefore: todayStr, imgBefore: null,
-                    dateDuring: todayStr, imgDuring: null,
-                    dateAfter: todayStr, imgAfter: null
-                });
-            }
-            pagesData = pagesData.slice(0, totalPages);
-
-            let fileIdx = 0;
-            const stages = ['Before', 'During', 'After'];
-
-            for (let p = 0; p < totalPages; p++) {
-                for (let s = 0; s < 3; s++) {
-                    if (fileIdx < files.length) {
-                        const file = files[fileIdx++];
-                        const stage = stages[s];
-                        const reader = new FileReader();
-                        
-                        reader.onload = (function(pIdx, stg) {
-                            return function(e) {
-                                const img = new Image();
-                                img.onload = function() {
-                                    pagesData[pIdx]['img' + stg] = img;
-                                    drawCanvas(pIdx, stg);
-                                };
-                                img.src = e.target.result;
-                            };
-                        })(p, stage);
-                        reader.readAsDataURL(file);
-                    }
-                }
-            }
-            renderAllPages();
-        }
-
-        function handleImageUpload(event, pIdx, type) {
-            event.stopPropagation();
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    pagesData[pIdx]['img' + type] = img;
-                    drawCanvas(pIdx, type);
-                    renderAllPages();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function drawCanvas(pIdx, type) {
-            const data = pagesData[pIdx];
-            const img = data['img' + type];
-            if (!img) return;
-
-            const canvas = document.getElementById(`canvas_${pIdx}_${type}`);
-            if (!canvas) return;
-
-            const dateVal = data['date' + type] || todayStr;
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-
-            // 在照片右下角壓印日期 (格式: YYYY.MM.DD)
-            if (dateVal) {
-                const formattedDate = dateVal.replace(/-/g, '.');
-                const fontSize = Math.max(canvas.width * 0.038, 18);
-                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-                ctx.fillStyle = '#FFC000';
-                ctx.shadowColor = '#000000';
-                ctx.shadowBlur = 4;
-                ctx.lineWidth = 2;
-
-                const metrics = ctx.measureText(formattedDate);
-                const x = canvas.width - metrics.width - 20;
-                const y = canvas.height - 20;
-
-                ctx.strokeText(formattedDate, x, y);
-                ctx.fillText(formattedDate, x, y);
-            }
-            canvas.classList.remove('hidden');
-        }
-
-        // 初始化渲染
-        renderAllPages();
-    </script>
-
-</body>
-</html>
+    function switchFacilitySection() {
