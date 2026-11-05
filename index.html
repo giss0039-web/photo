@@ -52,6 +52,16 @@
     <!-- 全域控制列 (不印出) -->
     <div class="max-w-2xl mx-auto mb-3 p-3 bg-white shadow rounded-xl no-print space-y-2">
         <h1 class="text-base font-bold text-center text-gray-800">施工照片產生器</h1>
+        <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+            <div>
+                <span class="font-bold text-blue-800 text-xs block">💡 快速批次上傳：</span>
+                <span class="text-xs text-blue-600">一次選取多張照片，會自動依序填入施工前、中、後！</span>
+            </div>
+            <label class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-xs cursor-pointer shadow whitespace-nowrap">
+                選擇多張照片
+                <input type="file" id="multiFiles" accept="image/*" multiple class="hidden" onchange="handleBatchImages(event)">
+            </label>
+        </div>
         <div class="flex justify-center gap-2">
             <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-blue-700 text-sm transition">
                 🖨️ 點我列印 / 存成 PDF 檔案
@@ -59,7 +69,7 @@
         </div>
     </div>
 
-    <!-- 輸出列印區域 (保證永遠只有 1 頁) -->
+    <!-- 輸出列印區域 (保證永遠只有單頁) -->
     <div id="print-area">
         <div class="page-container shadow-lg rounded-xl">
             <div class="border border-gray-400 rounded overflow-hidden w-full bg-white">
@@ -112,7 +122,7 @@
                                     <input type="date" id="date_Before" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
                                 </div>
                                 <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'Before')">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'Before')">
                                 </div>
                                 <div class="text-center">
                                     <canvas id="canvas_Before" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
@@ -130,7 +140,7 @@
                                     <input type="date" id="date_During" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
                                 </div>
                                 <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'During')">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'During')">
                                 </div>
                                 <div class="text-center">
                                     <canvas id="canvas_During" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
@@ -144,11 +154,11 @@
                             </td>
                             <td class="p-1.5 space-y-1 align-middle">
                                 <div class="flex items-center gap-1 no-print">
-                                    <span class="font-semibold text-gray-600 text-xs">日期:</span>
+                               張<span class="font-semibold text-gray-600 text-xs">日期:</span>
                                     <input type="date" id="date_After" class="border border-gray-300 rounded p-0.5 text-xs outline-none bg-white">
                                 </div>
                                 <div class="no-print">
-                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleImage(event, 'After')">
+                                    <input type="file" accept="image/*" class="w-full text-xs" onchange="handleSingleImage(event, 'After')">
                                 </div>
                                 <div class="text-center">
                                     <canvas id="canvas_After" class="hidden photo-canvas mx-auto rounded border shadow-sm"></canvas>
@@ -167,8 +177,7 @@
         document.getElementById('date_During').value = todayStr;
         document.getElementById('date_After').value = todayStr;
 
-        function handleImage(event, type) {
-            const file = event.target.files[0];
+        function processImage(file, type) {
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -204,6 +213,19 @@
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        function handleSingleImage(event, type) {
+            processImage(event.target.files[0], type);
+        }
+
+        function handleBatchImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            const stages = ['Before', 'During', 'After'];
+            for (let i = 0; i < Math.min(files.length, 3); i++) {
+                processImage(files[i], stages[i]);
+            }
         }
     </script>
 
