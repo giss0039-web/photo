@@ -1,307 +1,410 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>發票/費用自動辨識與清單工具</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f7f9fc;
-            margin: 0;
-            padding: 16px;
-            color: #333;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h2 {
-            font-size: 1.25rem;
-            margin-bottom: 16px;
-            color: #1a1a1a;
-        }
-        .form-group {
-            margin-bottom: 14px;
-        }
-        label {
-            display: block;
-            font-size: 0.85rem;
-            color: #666;
-            margin-bottom: 6px;
-        }
-        input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-        input:focus {
-            border-color: #4f46e5;
-            outline: none;
-        }
-        .btn-primary {
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .btn-primary:disabled {
-            background-color: #cbd5e1;
-            cursor: not-allowed;
-        }
-        .file-input-wrapper {
-            margin-bottom: 16px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 10px;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
-        th {
-            background-color: #f8fafc;
-            color: #475569;
-        }
-        .header-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 24px;
-        }
-        .clear-btn {
-            color: #ef4444;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .total-section {
-            margin-top: 16px;
-            text-align: right;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #4f46e5;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173b35">
+<title>工程費用請款管理系統</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <h2>發票自動辨識與填寫</h2>
+<header>
+  <h1>工程費用請款管理系統</h1>
+  <p>手機建單・收據辨識・自動加總・A4 紙本列印</p>
+</header>
 
-    <!-- 拍照與上傳按鈕 -->
-    <div class="file-input-wrapper">
-        <label for="cameraInput">選擇發票照片 / 連續拍照</label>
-        <input type="file" id="cameraInput" accept="image/*" capture="environment">
+<nav>
+  <button class="active" data-tab="home">總覽</button>
+  <button data-tab="expense">事務支出單</button>
+  <button data-tab="fuel">油資申請單</button>
+  <button data-tab="history">歷史紀錄</button>
+</nav>
+
+<main>
+
+<section id="home" class="tab">
+  <div class="stats">
+    <article>
+      <small>事務支出累計</small>
+      <strong id="sumExpense">NT$ 0</strong>
+    </article>
+    <article>
+      <small>油資里程累計</small>
+      <strong id="sumKm">0 km</strong>
+    </article>
+    <article>
+      <small>請款紀錄筆數</small>
+      <strong id="count">0</strong>
+    </article>
+  </div>
+
+  <div class="box">
+    <h2>新增請款</h2>
+    <div class="actions">
+      <button class="primary" onclick="tab('expense')">＋ 事務支出單</button>
+      <button onclick="tab('fuel')">＋ 油資申請單</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>列印方式</h2>
+    <p>
+      每筆請款可列印為正式 A4 表單。
+      選擇「整案彙整列印」可將事務支出單、
+      油資申請單及收據照片整理成同一份列印文件。
+      可選擇另存為 PDF 或使用實體印表機。
+    </p>
+  </div>
+
+  <div class="box">
+    <h2>最近紀錄</h2>
+    <div id="recent"></div>
+  </div>
+
+  <p class="warning">
+    目前版本將資料保存在使用中的瀏覽器。
+    請定期匯出備份；若要多人登入、跨裝置同步及主管審核，
+    需再串接雲端資料庫與登入服務。
+  </p>
+</section>
+
+
+<section id="expense" class="tab hide">
+
+  <div class="box">
+    <h2>事務支出單</h2>
+
+    <div class="formgrid">
+
+      <label>
+        案件編號
+        <input id="eCase" placeholder="案件編號">
+      </label>
+
+      <label>
+        請款單編號
+        <input id="eNo" placeholder="例如 AC001">
+      </label>
+
+      <label>
+        填單日期
+        <input id="eDate" type="date">
+      </label>
+
+      <label>
+        付款方式
+        <select id="ePay">
+          <option>現金</option>
+          <option>信用卡</option>
+          <option>轉帳</option>
+          <option>月結</option>
+          <option>其他</option>
+        </select>
+      </label>
+
+      <label class="wide">
+        備註
+        <textarea id="eNote" rows="2"></textarea>
+      </label>
+
+    </div>
+  </div>
+
+
+  <div class="box">
+    <h2>拍照辨識發票／收據</h2>
+
+    <p class="muted">
+      選擇照片後按辨識，OCR 結果可能有誤，
+      請核對後再儲存。
+    </p>
+
+    <input
+      id="receipt"
+      type="file"
+      accept="image/*"
+      capture="environment"
+    >
+
+    <img id="preview" class="preview hide">
+
+    <div class="actions">
+      <button id="ocr" class="primary">辨識收據文字</button>
+      <span id="ocrStatus" class="muted"></span>
     </div>
 
-    <!-- 表單欄位 -->
-    <div class="form-group">
-        <label for="storeInput">商店名稱 / 說明</label>
-        <input type="text" id="storeInput" placeholder="請等待自動辨識或直接修改...">
+    <textarea
+      id="ocrResult"
+      rows="4"
+      placeholder="辨識文字會顯示於此，可複製參考"
+    ></textarea>
+  </div>
+
+
+  <div class="box">
+    <h2>支出明細</h2>
+
+    <div class="formgrid">
+
+      <label>
+        會計科目
+        <select id="category">
+          <option>燃料費</option>
+          <option>交通費</option>
+          <option>餐費</option>
+          <option>印刷費</option>
+          <option>文具用品</option>
+          <option>住宿費</option>
+          <option>郵電費</option>
+          <option>工具設備</option>
+          <option>其他</option>
+        </select>
+      </label>
+
+      <label>
+        消費日期
+        <input id="spendDate" type="date">
+      </label>
+
+      <label>
+        商店／廠商
+        <input id="shop" placeholder="店家名稱">
+      </label>
+
+      <label>
+        支出說明
+        <input id="desc" placeholder="消費內容">
+      </label>
+
+      <label>
+        數量
+        <input id="qty" type="number" min="0" step="0.01" value="1">
+      </label>
+
+      <label>
+        單位
+        <input id="unit" placeholder="個、張、公升、公里">
+      </label>
+
+      <label>
+        支出單價
+        <input id="price" type="number" min="0" step="0.01" value="0">
+      </label>
+
+      <label>
+        付款方式
+        <select id="pay">
+          <option>現金</option>
+          <option>信用卡</option>
+          <option>轉帳</option>
+          <option>其他</option>
+        </select>
+      </label>
+
     </div>
 
-    <div class="form-group">
-        <label for="priceInput">總價 ($)</label>
-        <input type="number" id="priceInput" placeholder="0">
+    <div class="total">
+      本筆金額：
+      <strong id="lineTotal">NT$ 0</strong>
     </div>
 
-    <!-- 加入清單按鈕 -->
-    <button type="button" id="addBtn" class="btn-primary">+ 加入下方清單（可連續拍下一張）</button>
-
-    <!-- 清單區塊 -->
-    <div class="header-actions">
-        <h3>已登打的清單</h3>
-        <button type="button" id="clearAllBtn" class="clear-btn">清空全部清單</button>
+    <div class="actions">
+      <button class="primary" id="addExpense">加入明細</button>
+      <button id="clearExpense">清空欄位</button>
     </div>
 
-    <table>
+    <div class="tablewrap">
+      <table>
         <thead>
-            <tr>
-                <th>商店 / 說明</th>
-                <th>金額</th>
-                <th>操作</th>
-            </tr>
+          <tr>
+            <th>日期</th>
+            <th>科目／說明</th>
+            <th>數量</th>
+            <th>單價</th>
+            <th>金額</th>
+            <th></th>
+          </tr>
         </thead>
-        <tbody id="listBody">
-            <!-- 動態插入項目 -->
-        </tbody>
-    </table>
-
-    <!-- 總計金額顯示 -->
-    <div class="total-section" id="totalSection">
-        所有發票總計金額：$0
+        <tbody id="expenseRows"></tbody>
+      </table>
     </div>
-</div>
 
-<!-- 所有 JavaScript 邏輯都包在 script 標籤內，不會外露到畫面上 -->
-<script>
-    const cameraInput = document.getElementById('cameraInput');
-    const storeInput = document.getElementById('storeInput');
-    const priceInput = document.getElementById('priceInput');
-    const addBtn = document.getElementById('addBtn');
-    const listBody = document.getElementById('listBody');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    const totalSection = document.getElementById('totalSection');
+    <div class="total">
+      小計
+      <strong id="eSubtotal">NT$ 0</strong>
+    </div>
 
-    let items = [];
+    <div class="formgrid">
+      <label>
+        稅金比例（%）
+        <input id="taxRate" type="number" min="0" step="0.1" value="0">
+      </label>
 
-    // 將圖片轉換為 Base64 格式
-    function fileToGenerativePart(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve({
-                inlineData: {
-                    data: reader.result.split(',')[1],
-                    mimeType: file.type
-                }
-            });
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
+      <label>
+        稅金
+        <strong id="taxAmount">NT$ 0</strong>
+      </label>
+    </div>
 
-    // 實際呼叫 AI 辨識發票
-    async function realOcrApi(file) {
-        const imagePart = await fileToGenerativePart(file);
-        
-        // 請在此處填入你的 Gemini API Key
-        const apiKey = "你的_GEMINI_API_KEY"; 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    <div class="total">
+      總計
+      <strong id="eGrand">NT$ 0</strong>
+    </div>
 
-        const prompt = `請幫我辨識這張台灣電子發票，找出「商店名稱」與「總金額（總計金額）」，並嚴格只回傳以下格式的 JSON，不要有其他多餘文字：
-        {
-          "store": "商店名稱",
-          "amount": 數字金額
-        }`;
+    <div class="actions">
+      <button class="primary" id="saveExpense">儲存事務支出單</button>
+      <button id="printExpense">列印本張 A4</button>
+    </div>
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: prompt },
-                        imagePart
-                    ]
-                }]
-            })
-        });
+  </div>
+</section>
 
-        const data = await response.json();
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("無法取得辨識結果");
-        }
-        const textResult = data.candidates[0].content.parts[0].text;
-        
-        const cleanJsonStr = textResult.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanJsonStr);
-    }
 
-    // 1. 監聽拍照或選取檔案事件
-    cameraInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+<section id="fuel" class="tab hide">
 
-        // 立刻清空舊欄位避免殘留
-        storeInput.value = '';
-        priceInput.value = '';
+  <div class="box">
+    <h2>油資申請單</h2>
 
-        addBtn.disabled = true;
-        addBtn.textContent = '發票辨識中...';
+    <div class="formgrid">
 
-        try {
-            // 呼叫 AI 進行辨識
-            const result = await realOcrApi(file);
+      <label>
+        案件編號
+        <input id="fCase" placeholder="案件編號">
+      </label>
 
-            if (result && result.store) {
-                storeInput.value = result.store;
-                priceInput.value = result.amount;
-            } else {
-                storeInput.value = '請手動輸入';
-                priceInput.value = '';
-            }
-        } catch (error) {
-            console.error('辨識錯誤:', error);
-            storeInput.value = '辨識失敗，請手動輸入';
-            priceInput.value = '';
-        } finally {
-            addBtn.disabled = false;
-            addBtn.textContent = '+ 加入下方清單（可連續拍下一張）';
-        }
-    });
+      <label>
+        申請單編號
+        <input id="fNo" placeholder="例如 AC013">
+      </label>
 
-    // 2. 點擊「加入下方清單」
-    addBtn.addEventListener('click', () => {
-        const store = storeInput.value.trim();
-        const price = parseFloat(priceInput.value) || 0;
+      <label>
+        申請日期
+        <input id="fDate" type="date">
+      </label>
 
-        if (!store || store.includes('辨識中')) {
-            alert('請等待辨識完成或確認欄位內容！');
-            return;
-        }
+      <label>
+        車號／使用人
+        <input id="fCar" placeholder="車號或姓名">
+      </label>
 
-        // 新增至陣列
-        items.push({ store, price });
-        renderList();
+    </div>
+  </div>
 
-        // 成功加入後清空欄位與檔案快取，準備拍下一張
-        storeInput.value = '';
-        priceInput.value = '';
-        cameraInput.value = ''; 
-    });
 
-    // 3. 渲染清單畫面並計算總計
-    function renderList() {
-        listBody.innerHTML = '';
-        let totalSum = 0;
+  <div class="box">
+    <h2>新增行程／里程</h2>
 
-        items.forEach((item, index) => {
-            totalSum += Number(item.price);
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.store}</td>
-                <td>$${item.price}</td>
-                <td><button type="button" onclick="removeItem(${index})" style="color:red; background:none; border:none; cursor:pointer;">刪除</button></td>
-            `;
-            listBody.appendChild(tr);
-        });
+    <div class="formgrid">
 
-        totalSection.textContent = `所有發票總計金額：$${totalSum}`;
-    }
+      <label>
+        日期
+        <input id="tripDate" type="date">
+      </label>
 
-    // 4. 刪除單筆
-    window.removeItem = function(index) {
-        items.splice(index, 1);
-        renderList();
-    }
+      <label>
+        用途／行程說明
+        <input id="tripDesc" placeholder="起點、迄點、工作內容">
+      </label>
 
-    // 5. 清空全部清單
-    clearAllBtn.addEventListener('click', () => {
-        if (confirm('確定要清空全部清單嗎？')) {
-            items = [];
-            renderList();
-        }
-    });
-</script>
+      <label>
+        起點里程（km）
+        <input id="kmStart" type="number" min="0" step="0.1">
+      </label>
+
+      <label>
+        終點里程（km）
+        <input id="kmEnd" type="number" min="0" step="0.1">
+      </label>
+
+      <label>
+        高速公路里程（km）
+        <input id="highway" type="number" min="0" step="0.1" value="0">
+      </label>
+
+      <label>
+        油資金額（元）
+        <input id="fuelCost" type="number" min="0" step="1" value="0">
+      </label>
+
+    </div>
+
+    <div class="total">
+      本筆行駛里程
+      <strong id="tripKm">0 km</strong>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="addTrip">加入行程</button>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>行程說明</th>
+            <th>起訖里程</th>
+            <th>行駛 km</th>
+            <th>高速 km</th>
+            <th>油資</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="fuelRows"></tbody>
+      </table>
+    </div>
+
+    <div class="total">
+      總行駛里程
+      <strong id="totalKm">0 km</strong>
+      高速公路里程
+      <strong id="totalHighway">0 km</strong>
+      油資合計
+      <strong id="totalFuel">NT$ 0</strong>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="saveFuel">儲存油資申請單</button>
+      <button id="printFuel">列印本張 A4</button>
+    </div>
+
+  </div>
+</section>
+
+
+<section id="history" class="tab hide">
+  <div class="box">
+
+    <h2>歷史請款紀錄</h2>
+
+    <div class="actions">
+      <button id="printBundle" class="primary">
+        整案彙整列印（含收據照片）
+      </button>
+
+      <button id="export">匯出 CSV 備份</button>
+
+      <button id="clearAll" class="danger">
+        清除本機資料
+      </button>
+    </div>
+
+    <div id="historyList"></div>
+
+  </div>
+</section>
+
+</main>
+
+<div id="printArea"></div>
+
+<footer>
+  工程費用請款管理系統｜請定期匯出資料備份
+</footer>
+
+<script src="app.js"></script>
 
 </body>
 </html>
