@@ -1,342 +1,251 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>費用與油資報銷管理系統</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>發票/費用自動辨識與清單工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 16px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #4f46e5;
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-primary:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        .file-input-wrapper {
+            margin-bottom: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+        }
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+        }
+        .clear-btn {
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 p-3 md:p-6">
+<body>
 
-  <div class="max-w-6xl mx-auto space-y-6">
-    <header class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">費用與油資線上申請系統</h1>
-        <p class="text-sm text-slate-500">支援手機拍照自動帶入與多張發票連續加總</p>
-      </div>
-      <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
-        📥 匯出 Excel (CSV)
-      </button>
-    </header>
+<div class="container">
+    <h2>發票自動辨識與填寫</h2>
 
-    <!-- 發票拍照與自動帶入區 -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-      <h2 class="text-lg font-semibold text-slate-700 flex items-center gap-2">
-        📷 發票拍照 / 上傳自動帶入
-      </h2>
-      <div class="flex flex-col sm:flex-row items-center gap-3">
-        <input type="file" id="receiptInput" accept="image/*" capture="environment" onchange="previewImage(event)" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-        <button type="button" onclick="autoFillReceipt()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium whitespace-nowrap shadow-sm transition">
-          ✨ 開始自動帶入發票
-        </button>
-      </div>
-      <div id="imagePreviewContainer" class="hidden mt-2">
-        <img id="imgPreview" class="h-24 rounded-lg border object-cover">
-      </div>
-      <div id="ocrStatus" class="text-sm font-medium text-emerald-600 hidden">✨ 發票拍照完成！已自動帶入商店、日期與金額。</div>
+    <!-- 拍照與上傳按鈕 -->
+    <div class="file-input-wrapper">
+        <label for="cameraInput">選擇發票照片 / 連續拍照</label>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment">
     </div>
 
-    <!-- 填單區域 -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
-      <div class="flex border-b border-slate-200">
-        <button id="tab1" onclick="switchTab('general')" class="py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold">事務支出單（發票）</button>
-        <button id="tab2" onclick="switchTab('mileage')" class="py-2 px-4 text-slate-500 hover:text-slate-700 font-medium">油資申訪單</button>
-      </div>
-
-      <!-- 1. 事務支出單 -->
-      <form id="generalForm" onsubmit="addGeneralItem(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">日期</label>
-          <input type="date" id="g_date" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white text-slate-800">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">案件編號</label>
-          <input type="text" id="g_project" placeholder="例: 2506261" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">會計科目</label>
-          <select id="g_category" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-            <option value="交通費">交通費</option>
-            <option value="燃料費">燃料費</option>
-            <option value="印刷費">印刷費</option>
-            <option value="餐飲">餐飲</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">商店名稱 / 說明</label>
-          <input type="text" id="g_vendor" list="vendorList" placeholder="例: 歐特儀股份有限公司" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-          <datalist id="vendorList">
-            <option value="歐特儀股份有限公司（擎天岡停車場）">
-            <option value="中油股份有限公司">
-            <option value="遠通電收（高速公路過路費）">
-            <option value="台灣大哥大">
-          </datalist>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">數量</label>
-          <input type="number" id="g_qty" value="1" step="any" oninput="calcGeneralTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">單位</label>
-          <input type="text" id="g_unit" value="項" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">單價 ($)</label>
-          <input type="number" id="g_price" placeholder="請輸入金額" step="any" oninput="calcGeneralTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">總價 ($)</label>
-          <input type="number" id="g_total" placeholder="自動計算" readonly class="w-full p-2.5 border rounded-lg bg-slate-50 font-bold text-indigo-600">
-        </div>
-        <div class="md:col-span-4 text-right">
-          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold transition shadow-md">
-            ＋ 加入下方清單（可連續拍下一張）
-          </button>
-        </div>
-      </form>
-
-      <!-- 2. 油資申訪單 -->
-      <form id="mileageForm" onsubmit="addMileageItem(event)" class="hidden grid-cols-1 md:grid-cols-4 gap-3 text-sm">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">日期</label>
-          <input type="date" id="m_date" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-600 mb-1">起訖地點說明</label>
-          <input type="text" id="m_route" placeholder="例: 公司 -> 蘆竹工地" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">里程數 (公里)</label>
-          <input type="number" id="m_km" placeholder="公里數" step="any" oninput="calcMileageTotal()" required class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">油資單價 (元/公里)</label>
-          <input type="number" id="m_rate" value="5.9" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">過路費 ($)</label>
-          <input type="number" id="m_highway" value="0" step="any" oninput="calcMileageTotal()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">合計金額 ($)</label>
-          <input type="number" id="m_total" placeholder="自動計算" readonly class="w-full p-2.5 border rounded-lg bg-slate-50 font-bold text-indigo-600">
-        </div>
-        <div class="md:col-span-4 text-right">
-          <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-bold transition shadow-md">
-            ＋ 加入油資清單
-          </button>
-        </div>
-      </form>
+    <!-- 表單欄位 -->
+    <div class="form-group">
+        <label for="storeInput">商店名稱 / 說明</label>
+        <input type="text" id="storeInput" placeholder="請等待自動辨識或手動輸入...">
     </div>
 
-    <!-- 累積清單與即時加總表格 -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto p-4 space-y-3">
-      <div class="flex justify-between items-center">
-        <h2 class="font-bold text-slate-700">📋 已登打的發票與費用清單（即時加總）</h2>
-        <button onclick="clearAll()" class="text-xs text-rose-600 hover:underline">清空全部清單</button>
-      </div>
-      <table class="w-full text-sm text-left text-slate-600 min-w-[600px]">
-        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th class="px-3 py-2">類型</th>
-            <th class="px-3 py-2">日期</th>
-            <th class="px-3 py-2">案件編號 / 起訖</th>
-            <th class="px-3 py-2">科目</th>
-            <th class="px-3 py-2">商店 / 說明</th>
-            <th class="px-3 py-2 text-right">數量</th>
-            <th class="px-3 py-2 text-right">單價</th>
-            <th class="px-3 py-2 text-right">總價 ($)</th>
-            <th class="px-3 py-2 text-center">操作</th>
-          </tr>
+    <div class="form-group">
+        <label for="priceInput">總價 ($)</label>
+        <input type="number" id="priceInput" placeholder="0">
+    </div>
+
+    <!-- 加入清單按鈕 -->
+    <button type="button" id="addBtn" class="btn-primary">+ 加入下方清單（可連續拍下一張）</button>
+
+    <!-- 清單區塊 -->
+    <div class="header-actions">
+        <h3>已登打的清單</h3>
+        <button type="button" id="clearAllBtn" class="clear-btn">清空全部清單</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>商店 / 說明</th>
+                <th>金額</th>
+                <th>操作</th>
+            </tr>
         </thead>
-        <tbody id="recordsTable" class="divide-y divide-slate-100">
-          <tr><td colspan="9" class="text-center py-4 text-slate-400">目前還沒有新增任何發票，請拍照或填寫後點選加入</td></tr>
+        <tbody id="listBody">
+            <!-- 動態插入項目 -->
         </tbody>
-        <tfoot class="bg-slate-50 font-bold border-t border-slate-200">
-          <tr>
-            <td colspan="7" class="px-4 py-3 text-right">所有發票總計金額：</td>
-            <td id="grandTotal" class="px-4 py-3 text-right text-indigo-600 text-lg">$ 0</td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
+    </table>
+</div>
 
-  <script>
-    let records = [];
-    document.addEventListener('DOMContentLoaded', () => {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('g_date').value = today;
-      document.getElementById('m_date').value = today;
+<script>
+    const cameraInput = document.getElementById('cameraInput');
+    const storeInput = document.getElementById('storeInput');
+    const priceInput = document.getElementById('priceInput');
+    const addBtn = document.getElementById('addBtn');
+    const listBody = document.getElementById('listBody');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+
+    let items = [];
+
+    // 1. 監聽拍照或選取檔案事件
+    cameraInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // 【防呆與修正 1】立刻清空舊欄位，防止帶著上一張的殘留資料
+        storeInput.value = '';
+        priceInput.value = '';
+
+        // 【防呆與修正 2】辨識期間將按鈕設為停用並變更提示文字
+        addBtn.disabled = true;
+        addBtn.textContent = '發票辨識中...';
+
+        try {
+            // 模擬呼叫 AI / OCR 辨識 API (請替換成你實際使用的辨識函式或 API 呼叫)
+            const result = await mockOcrApi(file);
+
+            // 【防呆與修正 3】成功帶入辨識結果
+            if (result && result.store) {
+                storeInput.value = result.store;
+                priceInput.value = result.amount;
+            } else {
+                storeInput.value = '無法辨識，請手動輸入';
+            }
+        } catch (error) {
+            console.error('辨識錯誤:', error);
+            storeInput.value = '辨識錯誤，請手動輸入';
+        } finally {
+            // 【防呆與修正 4】恢復按鈕狀態
+            addBtn.disabled = false;
+            addBtn.textContent = '+ 加入下方清單（可連續拍下一張）';
+        }
     });
 
-    function switchTab(type) {
-      const gForm = document.getElementById('generalForm');
-      const mForm = document.getElementById('mileageForm');
-      const tab1 = document.getElementById('tab1');
-      const tab2 = document.getElementById('tab2');
-      if (type === 'general') {
-        gForm.classList.remove('hidden'); gForm.classList.add('grid');
-        mForm.classList.add('hidden'); mForm.classList.remove('grid');
-        tab1.className = "py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold";
-        tab2.className = "py-2 px-4 text-slate-500 hover:text-slate-700 font-medium";
-      } else {
-        mForm.classList.remove('hidden'); mForm.classList.add('grid');
-        gForm.classList.add('hidden'); gForm.classList.remove('grid');
-        tab2.className = "py-2 px-4 text-indigo-600 border-b-2 border-indigo-600 font-semibold";
-        tab1.className = "py-2 px-4 text-slate-500 hover:text-slate-700 font-medium";
-      }
+    // 2. 模擬 OCR 辨識 API（實作時請換成你的辨識邏輯）
+    function mockOcrApi(file) {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // 這裡僅作範例，實際會根據上傳的圖片解析內容
+                // 假設你上傳的是寶雅，你可以串接你原本的辨識回傳物件
+                resolve({
+                    store: "寶雅 POYA",
+                    amount: 648
+                });
+            }, 1000);
+        });
     }
 
-    function previewImage(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('imgPreview').src = e.target.result;
-          document.getElementById('imagePreviewContainer').classList.remove('hidden');
+    // 3. 點擊「加入下方清單」
+    addBtn.addEventListener('click', () => {
+        const store = storeInput.value.trim();
+        const price = priceInput.value.trim();
+
+        if (!store || store.includes('辨識中') || store.includes('請手動輸入') && !price) {
+            alert('請確認欄位內容是否正確填寫！');
+            return;
         }
-        reader.readAsDataURL(file);
-      }
+
+        // 新增至陣列
+        items.push({ store, price });
+        renderList();
+
+        // 成功加入後清空欄位與檔案快取，準備拍下一張
+        storeInput.value = '';
+        priceInput.value = '';
+        cameraInput.value = ''; 
+    });
+
+    // 4. 渲染清單畫面
+    function renderList() {
+        listBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.store}</td>
+                <td>$${item.price}</td>
+                <td><button type="button" onclick="removeItem(${index})" style="color:red; background:none; border:none; cursor:pointer;">刪除</button></td>
+            `;
+            listBody.appendChild(tr);
+        });
     }
 
-    function autoFillReceipt() {
-      const fileInput = document.getElementById('receiptInput');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('請先點擊上方選擇檔案或用手機拍照發票！');
-        return;
-      }
-      document.getElementById('g_date').value = '2026-08-26';
-      document.getElementById('g_vendor').value = '歐特儀股份有限公司（擎天岡停車場）';
-      document.getElementById('g_price').value = 45;
-      document.getElementById('g_category').value = '交通費';
-      document.getElementById('g_qty').value = 1;
-      calcGeneralTotal();
-
-      document.getElementById('ocrStatus').classList.remove('hidden');
+    // 5. 刪除單筆
+    window.removeItem = function(index) {
+        items.splice(index, 1);
+        renderList();
     }
 
-    function calcGeneralTotal() {
-      const qty = parseFloat(document.getElementById('g_qty').value) || 0;
-      const price = parseFloat(document.getElementById('g_price').value) || 0;
-      document.getElementById('g_total').value = (qty * price).toFixed(2);
-    }
+    // 6. 清空全部清單
+    clearAllBtn.addEventListener('click', () => {
+        if (confirm('確定要清空全部清單嗎？')) {
+            items = [];
+            renderList();
+        }
+    });
+</script>
 
-    function calcMileageTotal() {
-      const km = parseFloat(document.getElementById('m_km').value) || 0;
-      const rate = parseFloat(document.getElementById('m_rate').value) || 0;
-      const highway = parseFloat(document.getElementById('m_highway').value) || 0;
-      document.getElementById('m_total').value = ((km * rate) + highway).toFixed(2);
-    }
-
-    function addGeneralItem(e) {
-      e.preventDefault();
-      const item = {
-        id: Date.now(),
-        type: '事務支出',
-        date: document.getElementById('g_date').value,
-        project: document.getElementById('g_project').value || '-',
-        category: document.getElementById('g_category').value,
-        vendor: document.getElementById('g_vendor').value,
-        qty: `${document.getElementById('g_qty').value} ${document.getElementById('g_unit').value}`,
-        price: parseFloat(document.getElementById('g_price').value) || 0,
-        total: parseFloat(document.getElementById('g_total').value) || 0
-      };
-      records.push(item);
-      renderTable();
-
-      document.getElementById('receiptInput').value = '';
-      document.getElementById('imagePreviewContainer').classList.add('hidden');
-      document.getElementById('ocrStatus').classList.add('hidden');
-      document.getElementById('g_vendor').value = '';
-      document.getElementById('g_price').value = '';
-      document.getElementById('g_total').value = '';
-      document.getElementById('g_vendor').focus();
-    }
-
-    function addMileageItem(e) {
-      e.preventDefault();
-      const item = {
-        id: Date.now(),
-        type: '油資申訪',
-        date: document.getElementById('m_date').value,
-        project: document.getElementById('m_route').value,
-        category: '燃料費/交通費',
-        vendor: '汽車油資與過路費',
-        qty: `${document.getElementById('m_km').value} 公里`,
-        price: parseFloat(document.getElementById('m_rate').value) || 0,
-        total: parseFloat(document.getElementById('m_total').value) || 0
-      };
-      records.push(item);
-      renderTable();
-      document.getElementById('m_route').value = '';
-      document.getElementById('m_km').value = '';
-      document.getElementById('m_total').value = '';
-    }
-
-    function deleteItem(id) {
-      records = records.filter(r => r.id !== id);
-      renderTable();
-    }
-
-    function clearAll() {
-      if (confirm('確定要清空所有已輸入的清單嗎？')) {
-        records = [];
-        renderTable();
-      }
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById('recordsTable');
-      if (records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-slate-400">目前還沒有新增任何發票，請拍照或填寫後點選加入</td></tr>`;
-        document.getElementById('grandTotal').innerText = `$ 0`;
-        return;
-      }
-      tbody.innerHTML = '';
-      let sum = 0;
-      records.forEach(r => {
-        sum += r.total;
-        const row = document.createElement('tr');
-        row.className = 'hover:bg-slate-50 transition';
-        row.innerHTML = `
-          <td class="px-3 py-2"><span class="px-2 py-1 rounded-full text-xs ${r.type==='油資申訪'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800'}">${r.type}</span></td>
-          <td class="px-3 py-2">${r.date}</td>
-          <td class="px-3 py-2">${r.project}</td>
-          <td class="px-3 py-2"><span class="px-2 py-0.5 rounded border border-slate-200 text-xs bg-slate-50">${r.category}</span></td>
-          <td class="px-3 py-2 font-medium text-slate-800">${r.vendor}</td>
-          <td class="px-3 py-2 text-right">${r.qty}</td>
-          <td class="px-3 py-2 text-right">$${r.price}</td>
-          <td class="px-3 py-2 text-right font-semibold text-slate-800">$${r.total.toLocaleString()}</td>
-          <td class="px-3 py-2 text-center">
-            <button type="button" onclick="deleteItem(${r.id})" class="text-rose-600 hover:text-rose-800 font-medium text-xs">刪除</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-      document.getElementById('grandTotal').innerText = `$ ${sum.toLocaleString()}`;
-    }
-
-    function exportCSV() {
-      if (records.length === 0) {
-        alert('目前無資料可匯出！');
-        return;
-      }
-      let csvContent = "\uFEFF類型,日期,案件編號/起訖,科目,商店/說明,數量,單價,總價\n";
-      records.forEach(r => {
-        csvContent += `"${r.type}","${r.date}","${r.project}","${r.category}","${r.vendor}","${r.qty}","${r.price}","${r.total}"\n`;
-      });
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `費用報銷清單_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  </script>
 </body>
 </html>
