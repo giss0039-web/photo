@@ -37,7 +37,7 @@
             flex-direction: column;
         }
         
-        /* 100% 擬真 Word/Excel 工程表格樣式 */
+        /* 100% 擬真 Word 工程表格樣式 */
         .report-table {
             width: 100%;
             height: 100%;
@@ -56,7 +56,7 @@
         .photo-box {
             width: 100%;
             height: 100%;
-            min-height: 200px;
+            min-height: 180px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -66,8 +66,8 @@
         }
         
         .photo-canvas {
-            max-width: 92%;
-            max-height: 220px;
+            max-width: 90%;
+            max-height: 200px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -108,13 +108,13 @@
 
     <script>
         const todayStr = new Date().toISOString().split('T')[0];
-        let globalProject = '新北市客家文化園區景觀設施及特色遊具工程';
-        let globalVendor = '嘉大興營造股份有限公司';
+        let globalProject = '';
+        let globalVendor = '';
         let pagesData = [];
 
         // 初始化第 1 頁
         pagesData.push({
-            item: '既有景石移設',
+            item: '',
             dateBefore: todayStr, imgBefore: null,
             dateDuring: todayStr, imgDuring: null,
             dateAfter: todayStr, imgAfter: null
@@ -135,14 +135,14 @@
                                 施 工 照 片
                             </th>
                         </tr>
-                        <!-- 工程名稱 -->
+                        <!-- 工程名稱 (全域同步) -->
                         <tr style="height: 36px;">
                             <td class="w-[20%] font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">工程名稱</td>
                             <td class="w-[80%] text-left px-2">
                                 <input type="text" value="${globalProject}" placeholder="請輸入工程名稱" class="w-full outline-none text-sm font-serif bg-transparent" oninput="syncGlobalProject(this.value)">
                             </td>
                         </tr>
-                        <!-- 承攬廠商 -->
+                        <!-- 承攬廠商 (全域同步) -->
                         <tr style="height: 36px;">
                             <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">承攬廠商</td>
                             <td class="text-left px-2">
@@ -153,7 +153,7 @@
                         <tr style="height: 36px;">
                             <td class="font-semibold text-sm bg-white font-serif" style="font-family: '標楷體', serif;">施作項目</td>
                             <td class="text-left px-2">
-                                <input type="text" value="${data.item}" placeholder="請輸入施作項目" class="w-full outline-none text-sm font-serif bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
+                                <input type="text" value="${data.item}" placeholder="請輸入本頁施作項目" class="w-full outline-none text-sm font-serif bg-transparent" oninput="pagesData[${pIdx}].item = this.value">
                             </td>
                         </tr>
                         <!-- 施工前 -->
@@ -162,10 +162,16 @@
                                 <div class="vertical-text">施工前</div>
                             </td>
                             <td>
-                                <div class="photo-box" onclick="triggerFileInput(${pIdx}, 'Before')">
-                                    <input type="file" id="file_${pIdx}_Before" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
-                                    <canvas id="canvas_${pIdx}_Before" class="photo-canvas ${data.imgBefore ? '' : 'hidden'}"></canvas>
-                                    ${!data.imgBefore ? '<span class="text-xs text-gray-400 no-print">點擊上傳【施工前】照片</span>' : ''}
+                                <div class="w-full h-full flex flex-col justify-between p-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateBefore}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'Before', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'Before')">
+                                        <input type="file" id="file_${pIdx}_Before" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'Before')">
+                                        <canvas id="canvas_${pIdx}_Before" class="photo-canvas ${data.imgBefore ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgBefore ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -175,10 +181,16 @@
                                 <div class="vertical-text">施工中</div>
                             </td>
                             <td>
-                                <div class="photo-box" onclick="triggerFileInput(${pIdx}, 'During')">
-                                    <input type="file" id="file_${pIdx}_During" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'During')">
-                                    <canvas id="canvas_${pIdx}_During" class="photo-canvas ${data.imgDuring ? '' : 'hidden'}"></canvas>
-                                    ${!data.imgDuring ? '<span class="text-xs text-gray-400 no-print">點擊上傳【施工中】照片</span>' : ''}
+                                <div class="w-full h-full flex flex-col justify-between p-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateDuring}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'During', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'During')">
+                                        <input type="file" id="file_${pIdx}_During" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'During')">
+                                        <canvas id="canvas_${pIdx}_During" class="photo-canvas ${data.imgDuring ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgDuring ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -188,10 +200,16 @@
                                 <div class="vertical-text">施工後</div>
                             </td>
                             <td>
-                                <div class="photo-box" onclick="triggerFileInput(${pIdx}, 'After')">
-                                    <input type="file" id="file_${pIdx}_After" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'After')">
-                                    <canvas id="canvas_${pIdx}_After" class="photo-canvas ${data.imgAfter ? '' : 'hidden'}"></canvas>
-                                    ${!data.imgAfter ? '<span class="text-xs text-gray-400 no-print">點擊上傳【施工後】照片</span>' : ''}
+                                <div class="w-full h-full flex flex-col justify-between p-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 no-print text-xs">
+                                        <span class="text-gray-600 font-semibold">拍攝日期:</span>
+                                        <input type="date" value="${data.dateAfter}" class="border border-gray-300 rounded px-1 py-0.5 outline-none bg-white" onchange="updateDate(${pIdx}, 'After', this.value)">
+                                    </div>
+                                    <div class="photo-box flex-grow" onclick="triggerFileInput(${pIdx}, 'After')">
+                                        <input type="file" id="file_${pIdx}_After" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${pIdx}, 'After')">
+                                        <canvas id="canvas_${pIdx}_After" class="photo-canvas ${data.imgAfter ? '' : 'hidden'}"></canvas>
+                                        ${!data.imgAfter ? '<span class="text-xs text-gray-400 no-print">點擊框內上傳照片</span>' : ''}
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -219,6 +237,11 @@
             document.querySelectorAll('input[placeholder="請輸入承攬廠商"]').forEach(input => input.value = val);
         }
 
+        function updateDate(pIdx, type, val) {
+            pagesData[pIdx]['date' + type] = val;
+            drawCanvas(pIdx, type);
+        }
+
         function handleBatchImages(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -227,7 +250,7 @@
             
             while (pagesData.length < totalPages) {
                 pagesData.push({
-                    item: pagesData[0].item || '',
+                    item: '',
                     dateBefore: todayStr, imgBefore: null,
                     dateDuring: todayStr, imgDuring: null,
                     dateAfter: todayStr, imgAfter: null
@@ -293,12 +316,12 @@
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
 
-            // 在照片右下角加上壓印日期 (格式: YYYY.MM.DD)
+            // 在照片右下角壓印日期 (格式: YYYY.MM.DD)
             if (dateVal) {
                 const formattedDate = dateVal.replace(/-/g, '.');
                 const fontSize = Math.max(canvas.width * 0.038, 18);
                 ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-                ctx.fillStyle = '#FFC000'; // 黃色壓印字體
+                ctx.fillStyle = '#FFC000';
                 ctx.shadowColor = '#000000';
                 ctx.shadowBlur = 4;
                 ctx.lineWidth = 2;
@@ -313,7 +336,7 @@
             canvas.classList.remove('hidden');
         }
 
-        // 初始化第一頁畫面
+        // 初始化渲染
         renderAllPages();
     </script>
 
