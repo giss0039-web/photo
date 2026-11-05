@@ -1,251 +1,49 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>發票/費用自動辨識與清單工具</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f7f9fc;
-            margin: 0;
-            padding: 16px;
-            color: #333;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h2 {
-            font-size: 1.25rem;
-            margin-bottom: 16px;
-            color: #1a1a1a;
-        }
-        .form-group {
-            margin-bottom: 14px;
-        }
-        label {
-            display: block;
-            font-size: 0.85rem;
-            color: #666;
-            margin-bottom: 6px;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-        input:focus {
-            border-color: #4f46e5;
-            outline: none;
-        }
-        .btn-primary {
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .btn-primary:disabled {
-            background-color: #cbd5e1;
-            cursor: not-allowed;
-        }
-        .file-input-wrapper {
-            margin-bottom: 16px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 10px;
-            font-size: 0.9rem;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
-        th {
-            background-color: #f8fafc;
-            color: #475569;
-        }
-        .header-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 24px;
-        }
-        .clear-btn {
-            color: #ef4444;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h2>發票自動辨識與填寫</h2>
-
-    <!-- 拍照與上傳按鈕 -->
-    <div class="file-input-wrapper">
-        <label for="cameraInput">選擇發票照片 / 連續拍照</label>
-        <input type="file" id="cameraInput" accept="image/*" capture="environment">
-    </div>
-
-    <!-- 表單欄位 -->
-    <div class="form-group">
-        <label for="storeInput">商店名稱 / 說明</label>
-        <input type="text" id="storeInput" placeholder="請等待自動辨識或手動輸入...">
-    </div>
-
-    <div class="form-group">
-        <label for="priceInput">總價 ($)</label>
-        <input type="number" id="priceInput" placeholder="0">
-    </div>
-
-    <!-- 加入清單按鈕 -->
-    <button type="button" id="addBtn" class="btn-primary">+ 加入下方清單（可連續拍下一張）</button>
-
-    <!-- 清單區塊 -->
-    <div class="header-actions">
-        <h3>已登打的清單</h3>
-        <button type="button" id="clearAllBtn" class="clear-btn">清空全部清單</button>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>商店 / 說明</th>
-                <th>金額</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody id="listBody">
-            <!-- 動態插入項目 -->
-        </tbody>
-    </table>
-</div>
-
-<script>
-    const cameraInput = document.getElementById('cameraInput');
-    const storeInput = document.getElementById('storeInput');
-    const priceInput = document.getElementById('priceInput');
-    const addBtn = document.getElementById('addBtn');
-    const listBody = document.getElementById('listBody');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-
-    let items = [];
-
-    // 1. 監聽拍照或選取檔案事件
-    cameraInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        // 【防呆與修正 1】立刻清空舊欄位，防止帶著上一張的殘留資料
-        storeInput.value = '';
-        priceInput.value = '';
-
-        // 【防呆與修正 2】辨識期間將按鈕設為停用並變更提示文字
-        addBtn.disabled = true;
-        addBtn.textContent = '發票辨識中...';
-
-        try {
-            // 模擬呼叫 AI / OCR 辨識 API (請替換成你實際使用的辨識函式或 API 呼叫)
-            const result = await mockOcrApi(file);
-
-            // 【防呆與修正 3】成功帶入辨識結果
-            if (result && result.store) {
-                storeInput.value = result.store;
-                priceInput.value = result.amount;
-            } else {
-                storeInput.value = '無法辨識，請手動輸入';
+// 將圖片轉換為 Base64 格式以供 API 讀取
+function fileToGenerativePart(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve({
+            inlineData: {
+                data: reader.result.split(',')[1],
+                mimeType: file.type
             }
-        } catch (error) {
-            console.error('辨識錯誤:', error);
-            storeInput.value = '辨識錯誤，請手動輸入';
-        } finally {
-            // 【防呆與修正 4】恢復按鈕狀態
-            addBtn.disabled = false;
-            addBtn.textContent = '+ 加入下方清單（可連續拍下一張）';
-        }
-    });
-
-    // 2. 模擬 OCR 辨識 API（實作時請換成你的辨識邏輯）
-    function mockOcrApi(file) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // 這裡僅作範例，實際會根據上傳的圖片解析內容
-                // 假設你上傳的是寶雅，你可以串接你原本的辨識回傳物件
-                resolve({
-                    store: "寶雅 POYA",
-                    amount: 648
-                });
-            }, 1000);
         });
-    }
+        reader.reject = reject;
+        reader.readAsDataURL(file);
+    });
+}
 
-    // 3. 點擊「加入下方清單」
-    addBtn.addEventListener('click', () => {
-        const store = storeInput.value.trim();
-        const price = priceInput.value.trim();
+// 實際呼叫辨識的函數
+async function realOcrApi(file) {
+    const imagePart = await fileToGenerativePart(file);
+    
+    // 這裡填入你的 Gemini API Key (正式上線建議透過後端或安全方式存放)
+    const apiKey = "你的_GEMINI_API_KEY"; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-        if (!store || store.includes('辨識中') || store.includes('請手動輸入') && !price) {
-            alert('請確認欄位內容是否正確填寫！');
-            return;
-        }
+    const prompt = `請幫我辨識這張台灣電子發票，並嚴格只回傳以下格式的 JSON（不要有其他多餘文字）：
+    {
+      "store": "商店名稱",
+      "amount": 數字金額
+    }`;
 
-        // 新增至陣列
-        items.push({ store, price });
-        renderList();
-
-        // 成功加入後清空欄位與檔案快取，準備拍下一張
-        storeInput.value = '';
-        priceInput.value = '';
-        cameraInput.value = ''; 
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    imagePart
+                ]
+            }]
+        })
     });
 
-    // 4. 渲染清單畫面
-    function renderList() {
-        listBody.innerHTML = '';
-        items.forEach((item, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.store}</td>
-                <td>$${item.price}</td>
-                <td><button type="button" onclick="removeItem(${index})" style="color:red; background:none; border:none; cursor:pointer;">刪除</button></td>
-            `;
-            listBody.appendChild(tr);
-        });
-    }
-
-    // 5. 刪除單筆
-    window.removeItem = function(index) {
-        items.splice(index, 1);
-        renderList();
-    }
-
-    // 6. 清空全部清單
-    clearAllBtn.addEventListener('click', () => {
-        if (confirm('確定要清空全部清單嗎？')) {
-            items = [];
-            renderList();
-        }
-    });
-</script>
-
-</body>
-</html>
+    const data = await response.json();
+    const textResult = data.candidates[0].content.parts[0].text;
+    
+    // 清理 Markdown 標記並轉成 JSON 物件
+    const cleanJsonStr = textResult.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJsonStr);
+}
